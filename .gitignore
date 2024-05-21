@@ -1,8 +1,6 @@
-archive_dataset/
-archive_models_and_tests/
-3D_Experiments/3d_dataset_30x30x30/
-2D_Experiments/vin_dataset_27x27/
+# Ignoring specific folders
 2D_Experiments/vin_28x28_test_cases/
-
+2D_Experiments/vin_dataset_27x27/
+3D_Experiments/3d_dataset_30x30x30/
 
 
