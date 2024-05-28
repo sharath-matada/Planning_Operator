@@ -261,14 +261,11 @@ class PlanningOperator2D(nn.Module):
             self.add_module('conv%d' % i, SpectralConv2d(self.width, self.width, self.modes1, self.modes2))
             self.add_module('w%d' % i, nn.Conv2d(self.width, self.width, 1))
 
-        self.fc1 =  torch.nn.Sequential(nn.Linear(width, 128), nn.GELU(), nn.Linear(128, 1))
+        self.fc1 =  DeepNormMetric(self.width, (128, 128), concave_activation_size=20, activation=lambda: MaxReLUPairwiseActivation(128), symmetric=True)
 
     def forward(self, chi, gs):
         batchsize = chi.shape[0]
         size_x = size_y = chi.shape[1]
-
-        for i in range(batchsize):
-              chi[i, int(gs[i,0,0]), int(gs[i,1,0]), :] = -chi[i, int(gs[i,0,0]), int(gs[i,1,0]), :]
 
         grid = self.get_grid(batchsize, size_x, size_y, chi.device)
 
@@ -290,24 +287,24 @@ class PlanningOperator2D(nn.Module):
 
         x = x.permute(0, 2, 3, 1)
 
-        x = self.fc1(x)
+        # x = self.fc1(x)
 
         # print(gs.shape)
 
-        # g = x.clone()
-        # x1 = x.clone()
+        g = x.clone()
+        x1 = x.clone()
 
-        # for i in range(batchsize):
-        #         g[i, :, :, :] = x1[i, int(gs[i,0,0]), int(gs[i,1,0]), :]
+        for i in range(batchsize):
+                g[i, :, :, :] = x1[i, int(gs[i,0,0]), int(gs[i,1,0]), :]
 
-        # feature1 = g
-        # feature2 = x1
-        # reshapedfeature1 = feature1.reshape(-1,self.width)
-        # reshapedfeature2 = feature2.reshape(-1,self.width)
-        # output = self.fc1(reshapedfeature1,reshapedfeature2)
-        # reshapedoutput = output.reshape(batchsize,size_x,size_y,1)
+        feature1 = g
+        feature2 = x1
+        reshapedfeature1 = feature1.reshape(-1,self.width)
+        reshapedfeature2 = feature2.reshape(-1,self.width)
+        output = self.fc1(reshapedfeature1,reshapedfeature2)
+        reshapedoutput = output.reshape(batchsize,size_x,size_y,1)
 
-        return x
+        return reshapedoutput
 
     def get_grid(self, batchsize, size_x, size_y, device):
         gridx = torch.tensor(np.linspace(-1, 1, size_x), dtype=torch.float)
