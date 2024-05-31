@@ -287,24 +287,19 @@ class PlanningOperator2D(nn.Module):
 
         x = x.permute(0, 2, 3, 1)
 
-        # x = self.fc1(x)
-
-        # print(gs.shape)
-
         g = x.clone()
-        x1 = x.clone()
 
         for i in range(batchsize):
-                g[i, :, :, :] = x1[i, int(gs[i,0,0]), int(gs[i,1,0]), :]
+                g[i, :, :, :] = x[i, int(gs[i,0,0]), int(gs[i,1,0]), :]
 
-        feature1 = g
-        feature2 = x1
-        reshapedfeature1 = feature1.reshape(-1,self.width)
-        reshapedfeature2 = feature2.reshape(-1,self.width)
-        output = self.fc1(reshapedfeature1,reshapedfeature2)
-        reshapedoutput = output.reshape(batchsize,size_x,size_y,1)
+        g = g.reshape(-1,self.width)
+        x = x.reshape(-1,self.width)
 
-        return reshapedoutput
+        # Lifting layer:
+        output = self.fc1(x,g)
+        output = output.reshape(batchsize,size_x,size_y,1)
+
+        return output
 
     def get_grid(self, batchsize, size_x, size_y, device):
         gridx = torch.tensor(np.linspace(-1, 1, size_x), dtype=torch.float)

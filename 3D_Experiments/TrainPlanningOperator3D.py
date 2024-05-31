@@ -245,22 +245,19 @@ class PlanningOperator3D(nn.Module):
             if i < self.nlayers - 1: x = F.gelu(x)
 
         x = x.permute(0, 2, 3, 4, 1)
-
-
         g = x.clone()
-        x1 = x.clone()
 
         for i in range(batchsize):
-                g[i, :, :, :,:] = x1[i, int(gs[i,0,0]), int(gs[i,1,0]),int(gs[i,2,0]), :]
+                g[i, :, :, :,:] = x[i, int(gs[i,0,0]), int(gs[i,1,0]),int(gs[i,2,0]), :]
 
-        feature1 = g
-        feature2 = x1
-        reshapedfeature1 = feature1.reshape(-1,self.width)
-        reshapedfeature2 = feature2.reshape(-1,self.width)
-        output = self.fc1(reshapedfeature1,reshapedfeature2)
-        reshapedoutput = output.reshape(batchsize,size_x,size_y,size_z,1)
+        x = x.reshape(-1,self.width)
+        g = g.reshape(-1,self.width)
 
-        return reshapedoutput
+        # Lifting layer:
+        output = self.fc1(x,g)
+        output = output.reshape(batchsize,size_x,size_y,size_z,1)
+
+        return output
 
     def get_grid(self, batchsize, size_x, size_y, size_z, device):
         gridx = torch.tensor(np.linspace(-1, 1, size_x), dtype=torch.float)
