@@ -6,3 +6,11 @@ AblationStudy_EffectofDeepNorm/multgoal_dataset/
 AblationStudy_EffectofDeepNorm/singlegoal_dataset/
 AblationStudy_EffectofDeepNorm/mazes_15_2_3000.npz
 
+
+# __pycache__ Directories
+__pycache__/
+
+# NTFields Datasets
+3D_Experiments/ntfields/datasets/
+3D_Experiments/ntfields/configs/c3d.txt
+3D_Experiments/ntfields/Experiments/C3D

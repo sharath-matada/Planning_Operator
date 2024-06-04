@@ -1,0 +1,5 @@
+exp_name = PlanOp_3D
+data_dir = datasets/PlanOp_3D/3d_dataset_30x30x30
+input_data_glob = /*/model.obj
+num_dim = 3
+num_samples = 500000
