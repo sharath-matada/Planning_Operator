@@ -261,7 +261,7 @@ class PlanningOperator2D(nn.Module):
             self.add_module('conv%d' % i, SpectralConv2d(self.width, self.width, self.modes1, self.modes2))
             self.add_module('w%d' % i, nn.Conv2d(self.width, self.width, 1))
 
-        self.fc1 =  DeepNormMetric(self.width, (128, 128), concave_activation_size=20, activation=lambda: MaxReLUPairwiseActivation(128), symmetric=True)
+        self.fc1 =  DeepNormMetric(self.width, (128,128), concave_activation_size=20, activation=lambda: MaxReLUPairwiseActivation(128), symmetric=True)
 
     def forward(self, chi, gs):
         batchsize = chi.shape[0]
@@ -406,7 +406,7 @@ if __name__ == '__main__':
                                               batch_size=batch_size,
                                               shuffle=False)
 
-    op_type = 'w_DeepNorm_mulgoal'
+    op_type = 'w_DeepNorm_mulgoal_10concave'
     res_dir = './planningoperator2D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)

@@ -21,6 +21,8 @@ import os
 import sys
 from itertools import chain
 
+from torchsummary import summary
+
 # Helpers:
 
 class ConstrainedLinear(nn.Linear):
@@ -261,7 +263,7 @@ class PlanningOperator2D(nn.Module):
             self.add_module('conv%d' % i, SpectralConv2d(self.width, self.width, self.modes1, self.modes2))
             self.add_module('w%d' % i, nn.Conv2d(self.width, self.width, 1))
 
-        self.fc1 = torch.nn.Sequential(nn.Linear(width, 128), nn.GELU(), nn.Linear(128, 1))
+        self.fc1 = torch.nn.Sequential(nn.Linear(width, 128*6), nn.GELU(), nn.Linear(128*6, 1))
 
 
     def forward(self, chi, gs):
@@ -397,7 +399,7 @@ if __name__ == '__main__':
                                               batch_size=batch_size,
                                               shuffle=False)
 
-    op_type = 'wo_DeepNorm_singlegoal'
+    op_type = 'wo_DeepNorm_singlegoal_increasedparams'
     res_dir = './planningoperator2D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -436,8 +438,7 @@ if __name__ == '__main__':
                     myloss = LpLoss(size_average=False)
                     print("-" * 100)
                     model = PlanningOperator2D(modes, modes, width, nlayers).to(device)
-                    print(f'>> Total number of model parameters: {count_params(model)}')
-
+                    print(summary(model))
                     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=wd)
                     model_filename = '%s/model_depth4.ckpt' % base_dir
 

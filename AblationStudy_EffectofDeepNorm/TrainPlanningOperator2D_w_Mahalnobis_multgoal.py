@@ -268,7 +268,7 @@ class PlanningOperator2D(nn.Module):
             self.add_module('conv%d' % i, SpectralConv2d(self.width, self.width, self.modes1, self.modes2))
             self.add_module('w%d' % i, nn.Conv2d(self.width, self.width, 1))
 
-        self.fc1 =  MahalanobisMetric(self.width, (128,128))
+        self.fc1 =  MahalanobisMetric(self.width, (128*4,128*4))
 
     def forward(self, chi, gs):
         batchsize = chi.shape[0]
@@ -413,7 +413,7 @@ if __name__ == '__main__':
                                               batch_size=batch_size,
                                               shuffle=False)
 
-    op_type = 'w_MahalonobisNorm_mulgoal'
+    op_type = 'w_MahalonobisNorm_mulgoal_increasedparams'
     res_dir = './planningoperator2D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
