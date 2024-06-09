@@ -267,6 +267,11 @@ class PlanningOperator2D(nn.Module):
         batchsize = chi.shape[0]
         size_x = size_y = chi.shape[1]
 
+        # print("Batch Size", batchsize)
+        # print("Goal Size", gs.shape[0])
+
+        assert(gs.shape[0]==batchsize)
+
         grid = self.get_grid(batchsize, size_x, size_y, chi.device)
 
         chi = chi.permute(0, 3, 1, 2)
@@ -337,8 +342,8 @@ if __name__ == '__main__':
     ################################################################
     #                       configs
     ################################################################
-    Ntotal = 5054*10+1000*10
-    ntrain = 5054*10
+    Ntotal = int(70924/17)*10+1000*10
+    ntrain = int(70924/17)*10
     ntest = Ntotal-ntrain
 
     batch_size = 20
@@ -347,9 +352,9 @@ if __name__ == '__main__':
     scheduler_step = 100
     tol_early_stop = 500
 
-    modes = 8
+    modes = 5
     width = 32
-    nlayers = 5
+    nlayers = 4
 
     ################################################################
     # load data and data normalization
@@ -357,18 +362,18 @@ if __name__ == '__main__':
     t1 = default_timer()
 
     sub = 1
-    Sx = int(((28 - 1) / sub) + 1)
+    Sx = int(((8 - 1) / sub) + 1)
     Sy = Sx
 
-    mask = np.load('./vin_dataset_27x27/mask.npy')
+    mask = np.load('./vin_dataset_8x8/mask.npy')
     mask = torch.tensor(mask, dtype=torch.float)
-    dist_in = np.load('./vin_dataset_27x27/dist_in.npy')
+    dist_in = np.load('./vin_dataset_8x8/dist_in.npy')
     dist_in = torch.tensor(dist_in[:Ntotal, :, :], dtype=torch.float)
     input = smooth_chi(mask, dist_in, smooth_coef)
-    output = np.load('./vin_dataset_27x27/output.npy')
+    output = np.load('./vin_dataset_8x8/output.npy')
     output = torch.tensor(output, dtype=torch.float)
 
-    goals = np.load('./vin_dataset_27x27/goals.npy')
+    goals = np.load('./vin_dataset_8x8/goals.npy')
     goals = torch.tensor(goals, dtype=torch.float)
 
 
@@ -405,7 +410,7 @@ if __name__ == '__main__':
                                               batch_size=batch_size,
                                               shuffle=False)
 
-    op_type = 'vin_maze27x27_symmetric_norm'
+    op_type = 'vin_maze8x8_symmetric_norm'
     res_dir = './planningoperator2D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -493,7 +498,7 @@ if __name__ == '__main__':
 
                             test_l2 /= ntest
                             ttest.append([ep, test_l2])
-                            if test_l2 < best_test_loss+0.01:
+                            if test_l2 < best_test_loss:
                                 early_stop = 0
                                 best_train_loss = train_l2
                                 best_test_loss = test_l2
