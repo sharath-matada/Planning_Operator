@@ -1,16 +1,10 @@
 # Ignoring specific folders
-2D_Experiments/vin_28x28_test_cases/
-2D_Experiments/vin_dataset_27x27/
-2D_Experiments/vin_dataset_16x16/
-2D_Experiments/vin_dataset_8x8/
-
-2D_Experiments/gridworld_8_test.mat
-2D_Experiments/gridworld_16_test.mat
-2D_Experiments/gridworld_28_test.mat
+2D_Experiments/dataset/
+2D_Experiments/dump/
 
 3D_Experiments/3d_dataset_30x30x30/
 
-AblationStudy_EffectofDeepNorm/multgoal_dataset/
-AblationStudy_EffectofDeepNorm/singlegoal_dataset/
-AblationStudy_EffectofDeepNorm/mazes_15_2_3000.npz
+2D_Experiments/ablation/AblationStudy_EffectofDeepNorm/multgoal_dataset/
+2D_Experiments/ablation/AblationStudy_EffectofDeepNorm/singlegoal_dataset/
+2D_Experiments/ablation/AblationStudy_EffectofDeepNorm/mazes_15_2_3000.npz
 

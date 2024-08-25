@@ -1,0 +1,1 @@
+ntrain, seed, learning_rate, scheduler_gamma, weight_decay, smooth_coef, best_train_loss, best_valid_loss, best_epoch

@@ -1,0 +1,2 @@
+ntrain, seed, learning_rate, scheduler_gamma, weight_decay, smooth_coef, best_train_loss, best_valid_loss, best_epoch
+2000, 5, 0.005, 0.5, 3e-06, 5.0, 0.014607495598495007, 0.12597107541561126, 33

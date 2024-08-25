@@ -2,19 +2,23 @@ from astar.environment_abc import EnvironmentABC
 import numpy as np
 
 class Environment2D(EnvironmentABC):
-  __U = np.array([[-1, -1, -1, 0, 0, 1, 1, 1],
-                  [-1,  0,  1,-1, 1,-1, 0, 1]])
-  
+  __U = np.array([[-1, -1, -1, 0, 0, 1, 1, 1],[-1, 0, 1, -1, 1, -1, 0, 1]])
   __iU = np.array([0, 1, 2, 3, 4, 5, 6, 7]) 
   __cU =  np.array([np.sqrt(2), 1, np.sqrt(2), 1, 1, np.sqrt(2), 1, np.sqrt(2)])
   
-  def __init__(self, goal_coord, cmap):
+  def __init__(self, goal_coord, cmap, valuefunction = None):
     self.__goal_coord = goal_coord
     self.__cmap = cmap
     self.__cdim = np.array([cmap.shape]).T
+    self.valuefunction = valuefunction
     
   def isGoal(self, curr):
     return np.array_equal(curr,self.__goal_coord)
+  
+
+  def getGoal(self):
+    return self.__goal_coord
+
 
   #def coord_to_idx(self, curr):
   #  return np.ravel_multi_index(curr, self.__cmap.shape)
@@ -37,57 +41,16 @@ class Environment2D(EnvironmentABC):
     #return succ, succ_idx, succ_cost, action_idx
 
   def getHeuristic(self, curr):
-    return np.linalg.norm(curr - self.__goal_coord)
+    if self.valuefunction is None:
+     return 0
+    else:
+      return self.valuefunction[curr[0],curr[1]]   
 
   def forwardAction(self, curr, action_id):
     return curr + self.__U[:,action_id]
   
-
-
-
-import numpy as np
-
-class Environment3D(EnvironmentABC):
-
-    __U = np.array([[ 0,  0,  1,  -1,  0,  0,   0, 1, 1,   0,  1,  1,    0,-1,-1,    0,-1,-1,     1, -1,  1,    1, -1, -1,    -1, 1],
-                    [ 0,  1,  0,   0, -1,  0,   1, 0, 1,  -1,  0, -1,    1, 0, 1,   -1, 0,-1,     1,  1, -1,   -1,  1, -1,    -1, 1],
-                    [ 1,  0,  0,   0,  0, -1,   1, 1, 0,   1, -1,  0,   -1, 1, 0,   -1,-1, 0,    -1,  1,  1,   -1, -1,  1,    -1, 1]])
-
-    __iU = np.arange(26)
-    __cU = np.linalg.norm(__U, axis=0)
-
-    def __init__(self, goal_coord, cmap):
-        self.__goal_coord = goal_coord
-        self.__cmap = cmap
-        self.__cdim = np.array(cmap.shape)
-    
-    def isGoal(self, curr):
-        return np.array_equal(curr, self.__goal_coord)
-    
-    def getSuccessors(self, curr):
-        # Get neighbors
-        succ = curr[:, None] + self.__U
-        
-        # Remove neighbors outside of the map
-        valid = np.all(np.logical_and(np.zeros((3, 1)) <= succ, succ < self.__cdim[:, None]), axis=0)
-        succ = succ[:, valid]
-        succ_cost = self.__cU[valid]
-        action_idx = self.__iU[valid]
-        
-        valid = self.__cmap[succ[0, :], succ[1, :], succ[2, :]] == 0
-        succ = succ[:, valid]
-        succ_cost = succ_cost[valid]
-        action_idx = action_idx[valid]
-        
-        return succ, succ_cost, action_idx
-    
-    def getHeuristic(self, curr):
-        return np.linalg.norm(curr - self.__goal_coord)
-    
-    def forwardAction(self, curr, action_id):
-        return curr + self.__U[:, action_id]
-
-
+  def getSize(self):
+    return self.__cmap.shape
 
 
 if __name__ == '__main__':
