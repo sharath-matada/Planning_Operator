@@ -1,5 +1,6 @@
 import time
-import matplotlib as plt
+import numpy as np
+import matplotlib.pyplot as plt
 from matplotlib import colors as mcolors
 from matplotlib.image import AxesImage
 from matplotlib.collections import PolyCollection, LineCollection, PathCollection
@@ -8,7 +9,6 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection, Path3
 def tic():
   return time.time()
 def toc(tstart, nm=""):
-  
   return (time.time() - tstart)
 
 def drawMap(ax,cmap):
@@ -103,3 +103,28 @@ def plotClosedNodes(ax, sss, color='red', marker='x', label='Closed Nodes'):
 
   # Plot the closed nodes on the provided axes
   ax.scatter(x_coords, y_coords, c=color, marker=marker, label=label)
+
+
+def plotInconsistentNodes(ax, sss, env):
+    """
+    Plots the nodes in the inconsistent list on the provided axis.
+
+    Parameters:
+    - sss: The state space structure containing the inconsistent list.
+    - env: The environment object that provides grid size information.
+    - ax: The matplotlib axis to plot on.
+    """
+    # Extract grid size
+    grid_size = env.getSize()
+    
+    # Extract and plot inconsistent nodes
+    inconsistent_coords = [node.coord for node in sss['il']]
+    
+    if inconsistent_coords:
+        inconsistent_coords = np.array(inconsistent_coords)
+        ax.scatter(inconsistent_coords[:, 1], grid_size[0] - inconsistent_coords[:, 0] - 1, 
+                   c='red', marker='x', label='Inconsistent Nodes')
+    # else:
+    #    print("No inconistent nodes")    
+
+    ax.legend()

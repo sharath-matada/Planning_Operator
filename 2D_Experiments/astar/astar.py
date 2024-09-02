@@ -67,43 +67,66 @@ class AStar(object):
       # remove the element with smallest cost
       curr = sss['pq'].popitem()[1][1]
 
+  def eplan(start_coord, env, eps = 1):
+    sss = AStateSpace(eps) # Initialize state space
+    curr = AState(tuple(start_coord), start_coord, env.getHeuristic(start_coord)) # env.coord_to_idx(start_coord), 
+    curr.g = 0
+    curr.iteration_opened = sss['expands']
+    
+    while True:
+      # check if done
+      if env.isGoal(curr.coord):
+        return AStar.__recoverPath(curr, env, sss)
+      
+      # count the number of expands
+      sss['expands'] += 1
+      
+      # add curr to the Closed list
+      curr.v = curr.g
+      curr.iteration_closed = sss['expands']
+      sss['closed_list'].add(curr.key)
+      # update heap
+      AStar.__spin( curr, sss, env )
+      
+      if not sss['pq']:
+        return math.inf, deque(), deque(), sss['expands'], sss
+    
+      # remove the element with smallest cost
+      curr = sss['pq'].popitem()[1][1]   
+
+
   def getDistances(env, eps=1):
     sss = AStateSpace(eps)  # Initialize state space
     goal_coord = np.array(env.getGoal()).astype(int)
-    curr = AState(tuple(goal_coord), goal_coord, 0)  # Start from the goal node
+    curr = AState(tuple(goal_coord), goal_coord, env.getHeuristic(goal_coord))  # Start from the goal node
     curr.g = 0
     curr.iteration_opened = sss['expands']
     
     # Initialize the 2D distance matrix with infinity
     grid_size = env.getSize()  
-    distance_matrix = np.full(grid_size, np.inf)
-    distance_matrix[goal_coord[0], goal_coord[1]] = 0
+    distance_matrix = np.full(grid_size, 10e8)
 
     while True:
-        # Count the number of expands
-        sss['expands'] += 1
+    
+      # count the number of expands
+      sss['expands'] += 1
 
-        # Update the distance matrix
-        curr_row, curr_col = curr.coord
-        distance_matrix[curr_row, curr_col] = curr.g
+      # Upadate current node value on the distance matrix
+      curr_x, curr_y = curr.coord
+      distance_matrix[curr_x,curr_y] = curr.g
 
-        # Add curr to the Closed list
-        curr.v = curr.g
-        curr.iteration_closed = sss['expands']
-        sss['closed_list'].add(curr.key)
-        
-        # Update the heap with successors
-        AStar.__spin(curr, sss, env)
-        
-        if not sss['pq']:  # If there are no more nodes to expand, terminate
-            break
-        
-        # Remove the element with the smallest cost
-        curr = sss['pq'].popitem()[1][1]
-
-    distance_matrix[goal_coord[0], goal_coord[1]] = 0
-    distance_matrix = np.where(np.isnan(distance_matrix), 10e8, distance_matrix)    
-    distance_matrix = np.where(np.isinf(distance_matrix), 10e8, distance_matrix)  
+      # add curr to the Closed list
+      curr.v = curr.g
+      curr.iteration_closed = sss['expands']
+      sss['closed_list'].add(curr.key)
+      # update heap
+      AStar.__spin( curr, sss, env )
+      
+      if not sss['pq']:
+        break
+    
+      # remove the element with smallest cost
+      curr = sss['pq'].popitem()[1][1]
 
     return distance_matrix
 

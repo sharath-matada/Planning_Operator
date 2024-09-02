@@ -8,7 +8,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as tvt
 
+# FMM Packages
 import pykonal
+import skfmm
 
 import matplotlib.pyplot as plt
 
@@ -21,7 +23,7 @@ if main_folder_path not in sys.path:
 
 from astar.astar import  AStar
 from astar.environment_simple import Environment2D
-from astar.utilities import tic,toc,drawMap,drawPath2D,plotClosedNodes
+from astar.utilities import tic,toc,drawMap,drawPath2D,plotClosedNodes,plotInconsistentNodes
 
 from generators.dijkstra_data_generator import calculate_signed_distance
 
@@ -34,6 +36,7 @@ from models.TrainPlanningOperator2D import smooth_chi
 
 
 def generaterandompos(maps):
+    "Generates random positions in the free space of given maps"
 
     numofmaps = maps.shape[0]
     env_size = maps.shape[1]
@@ -65,10 +68,12 @@ def euclideannorm(map,goal):
     return valuefunction, dt
 
 def FMM(map,goal):
+    '''Map is a 2D binary occupancy map with 1 representing obstacle and 0 representing free space
+    Goal is an index in the map'''
 
     t0 = tic()
     env_size_x, env_size_y = map.shape
-    velocity_matrix = 1-map
+    velocity_matrix = (1-map)
     solver = pykonal.EikonalSolver(coord_sys="cartesian")
     solver.velocity.min_coords = 0, 0, 0
     solver.velocity.node_intervals = 1, 1, 1
@@ -83,9 +88,48 @@ def FMM(map,goal):
     dt = toc(t0)
     return valuefunction,dt
 
+def highresFMM(map,goal):
+    '''Map is a 2D binary occupancy map with 1 representing obstacle and 0 representing free space
+    Goal is an index in the map
+    For high res output insert high res map (2x the orignal map)'''
+
+    t0 = tic()
+    env_size_x, env_size_y = map.shape
+    velocity_matrix = (1-map)
+    solver = pykonal.EikonalSolver(coord_sys="cartesian")
+    solver.velocity.min_coords = 0, 0, 0
+    solver.velocity.node_intervals = 0.5, 0.5, 0.5
+    solver.velocity.npts = env_size_x, env_size_y, 1
+    solver.velocity.values = velocity_matrix.reshape(env_size_x, env_size_y, 1)
+    src_idx = 2*goal[0].astype(int), 2*goal[1].astype(int), 0
+    solver.traveltime.values[src_idx] = 0
+    solver.unknown[src_idx] = False
+    solver.trial.push(*src_idx)
+    solver.solve()
+    valuefunction = solver.traveltime.values[:, :, 0]
+    valuefunction = valuefunction[1::2, 1::2]
+    dt = toc(t0)
+    return valuefunction,dt
+
+
+def scikitFMM(map,goal):
+    '''Map is a 2D binary occupancy map with 1 representing obstacle and 0 representing free space
+    Goal is an index in the map'''
+
+    t0 = tic()
+    env_size_x, env_size_y = map.shape
+    phi = np.ones((env_size_x, env_size_y))
+    phi[goal[0].astype(int),goal[1].astype(int)] = 0
+    velocity_matrix = (1-map)
+    valuefunction = skfmm.travel_time(phi, speed = velocity_matrix)
+    dt = toc(t0)
+
+    return valuefunction,dt
+
 
 def dijkstra(map,goal):
-
+    '''Map is a 2D binary occupancy map with 1 representing obstacle and 0 representing free space
+    Goal is an index in the map'''
     t0 = tic()
     env = Environment2D(goal,map)
     valuefunction = AStar.getDistances(env)
@@ -95,6 +139,8 @@ def dijkstra(map,goal):
 
 
 def planningoperator(map,goal,model,erosion=4):
+    '''Map is a 2D binary occupancy map with 1 representing obstacle and 0 representing free space
+    Goal is an index in the map'''
 
     mask = 1-map
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -105,7 +151,7 @@ def planningoperator(map,goal,model,erosion=4):
     # Erode Map to under approximate value function
     eroded_map =  1-ndimage.binary_erosion(1-np.array(mask),iterations=erosion).astype(np.array(mask).dtype)
     terode = toc(t0)
-    print("Erode Time",terode)
+    # print("Erode Time",terode)
 
     # Calculate SDF of eroded map
     sdf = calculate_signed_distance(eroded_map)
@@ -114,7 +160,7 @@ def planningoperator(map,goal,model,erosion=4):
     sdf = sdf.reshape(1,env_size_x,env_size_y,1)
     sdf = torch.tensor(sdf,dtype=torch.float)
     tsdf = toc(t0) - terode
-    print("SDF Time",tsdf)
+    # print("SDF Time",tsdf)
 
     # Calculate Chi for smoothening
     smooth_coef=5. #Depends on what is it trained on
@@ -130,7 +176,7 @@ def planningoperator(map,goal,model,erosion=4):
     valuefunction = valuefunction.detach().cpu().numpy().reshape(env_size_x,env_size_y)
     valuefunction = valuefunction/(mask+10e-10)
     tno = toc(t0) - tsdf -terode
-    print("NO time:",tno)
+    # print("NO time:",tno)
 
     # Calculate Max
     euclideanvalue, _ = euclideannorm(mask, goal)
@@ -158,6 +204,7 @@ def testheuristiconsinglemap(start, goal, map, heuristic, plotresults = False, *
         f, ax = plt.subplots()
         drawMap(ax, map)
         plotClosedNodes(ax,sss)
+        plotInconsistentNodes(ax,sss)
         drawPath2D(ax, path_array)
 
     print(  'Path Cost:', path_cost, 
@@ -201,6 +248,7 @@ def testheuristiconmaps(starts, goals, maps, heuristic, plotresults = False, pri
             f, ax = plt.subplots()
             drawMap(ax, map)
             plotClosedNodes(ax,sss)
+            plotInconsistentNodes(ax,sss,env)
             drawPath2D(ax, path_array)
     
 
