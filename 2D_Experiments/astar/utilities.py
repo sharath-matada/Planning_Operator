@@ -122,8 +122,8 @@ def plotInconsistentNodes(ax, sss, env):
     
     if inconsistent_coords:
         inconsistent_coords = np.array(inconsistent_coords)
-        ax.scatter(inconsistent_coords[:, 1], grid_size[0] - inconsistent_coords[:, 0] - 1, 
-                   c='red', marker='x', label='Inconsistent Nodes')
+        ax.scatter(inconsistent_coords[:, 0], inconsistent_coords[:, 1], 
+                   c='blue', marker='x', label='Inconsistent Nodes')
     # else:
     #    print("No inconistent nodes")    
 

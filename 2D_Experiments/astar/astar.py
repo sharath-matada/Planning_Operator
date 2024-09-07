@@ -17,6 +17,7 @@ class AState(object):
     self.iteration_closed = 0
     self.v = math.inf
     self.inconsistent = False
+
   def __lt__(self, other):
     return self.g < other.g  
 
@@ -33,10 +34,41 @@ def AStateSpace(eps):
   a_state_space['eps_satisfied'] = math.inf
   a_state_space['expands'] = 0       # number of expands in the current search
   a_state_space['searchexpands'] = 0 # total number of expands over all searches; Not used for aStar
-  a_state_space['use_il'] = False
+  a_state_space['use_il'] = True
   a_state_space['reopen_nodes'] = False
   return a_state_space
 
+def UpdateAStateSpace(eps, sss, env):
+    goal = np.array(env.getGoal())
+    # Update the pq with items from the il
+    # sss['pq'].update({state.key: (state.g + state.h, state) for state in sss['il']})
+    
+    # Compute the combined items for the priority queue
+    # for key, (fval, state) in sss['pq'].items():
+    #     sss['pq'][key] = (state.g + env.getHeuristic(state.coord), state)
+
+    # for s_key, old_state in sss['hm'].items():
+    #     s_coord = old_state.coord
+    #     new_hval = env.getHeuristic(s_coord)
+    #     sss['hm'][s_key] = AState(s_key, s_coord, new_hval)
+
+    # Create the new state space
+    a_state_space = {
+        'il': [],  # Reset the inconsistent list
+        'pq': pqdict(sss['pq']),  # Initialize pqdict with combined items
+        'hm': sss['hm'],  # This could be copied or reset depending on your logic
+        'closed_list': set(),  # Reset the closed list
+        'eps': sss['eps'] + 1,
+        'eps_decrease': 0.2,
+        'eps_final': 1.0,
+        'eps_satisfied': math.inf,
+        'expands': 0,  # Reset expands for the current search
+        'searchexpands': sss['expands'],  # Carry over the total expands
+        'use_il': True,
+        'reopen_nodes': False
+    }
+    
+    return a_state_space
 
 class AStar(object):
   @staticmethod
@@ -67,20 +99,19 @@ class AStar(object):
       # remove the element with smallest cost
       curr = sss['pq'].popitem()[1][1]
 
-  def eplan(start_coord, env, eps = 1):
-    sss = AStateSpace(eps) # Initialize state space
+  def xplan(start_coord, env, eps = 1):
+    sss = AStateSpace(eps)
     curr = AState(tuple(start_coord), start_coord, env.getHeuristic(start_coord)) # env.coord_to_idx(start_coord), 
     curr.g = 0
     curr.iteration_opened = sss['expands']
-    
+
+    # Run Search with Planning Operator as heuristic eps>1 for generating sub-optimal path
     while True:
       # check if done
       if env.isGoal(curr.coord):
         return AStar.__recoverPath(curr, env, sss)
-      
       # count the number of expands
       sss['expands'] += 1
-      
       # add curr to the Closed list
       curr.v = curr.g
       curr.iteration_closed = sss['expands']
@@ -90,12 +121,35 @@ class AStar(object):
       
       if not sss['pq']:
         return math.inf, deque(), deque(), sss['expands'], sss
-    
       # remove the element with smallest cost
-      curr = sss['pq'].popitem()[1][1]   
+      curr = sss['pq'].popitem()[1][1]
+      
+
+  def repairPlan(start_coord, env, sss, eps = 2):    
+      sss = UpdateAStateSpace(eps,sss,env) # Update state space
+      curr = sss['pq'].popitem()[1][1]
+      while True:
+        # check if done
+        if env.isGoal(curr.coord):
+          return AStar.__recoverPath(curr, env, sss)
+        # count the number of expands
+        sss['expands'] += 1
+        # add curr to the Closed list
+        curr.v = curr.g
+        curr.iteration_closed = sss['expands']
+        sss['closed_list'].add(curr.key)
+        # update heap
+        AStar.__spin( curr, sss, env )
+
+        if not sss['pq']:
+          return math.inf, deque(), deque(), sss['expands'], sss
+        # remove the element with smallest cost
+        curr = sss['pq'].popitem()[1][1]
 
 
   def getDistances(env, eps=1):
+    '''Dijkstra Implementation '''
+    
     sss = AStateSpace(eps)  # Initialize state space
     goal_coord = np.array(env.getGoal()).astype(int)
     curr = AState(tuple(goal_coord), goal_coord, env.getHeuristic(goal_coord))  # Start from the goal node
@@ -181,26 +235,26 @@ class AStar(object):
         path_cost = curr.g
         path = deque()
         action_idx = deque()
-        nodes_info = []
-        heuristic_values = []
+        # nodes_info = []
+        # heuristic_values = []
 
         while curr.parent is not None:
             # Store the current node's coordinates and actual cost (g)
-            nodes_info.append((curr.coord, curr.g))
+            # nodes_info.append((curr.coord, curr.g))
             # Store the heuristic value separately
-            heuristic_values.append(curr.h)
+            # heuristic_values.append(curr.h)
             
             path.appendleft(curr.coord)
             action_idx.appendleft(curr.parent_action_id)
             curr = curr.parent
         
         # Store the start node's information
-        nodes_info.append((curr.coord, curr.g))
-        heuristic_values.append(curr.h)
+        # nodes_info.append((curr.coord, curr.g))
+        # heuristic_values.append(curr.h)
         path.appendleft(curr.coord)
 
         # Invert the heuristic values list
-        heuristic_values.reverse()
+        # heuristic_values.reverse()
 
         # Print the information with the inverted heuristic values
         # print("Recovering path with inverted heuristic values:")

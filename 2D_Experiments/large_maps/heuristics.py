@@ -269,6 +269,58 @@ def testheuristiconmaps(starts, goals, maps, heuristic, plotresults = False, pri
     return avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate
 
 
+def testheuristiconmaps_eplan(starts, goals, maps, heuristic, plotresults = False, printvalues = True, **kwargs):
+    avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate = 0, 0, 0, 0, 0
+    totpathcost, totplantime, totinfertime, totnodesexp, succcount = 0, 0, 0, 0, 0
+
+    numofmaps = maps.shape[0]
+
+    for start, goal, map in zip(starts, goals, 1-maps):
+
+        # Call the heuristic function with additional arguments
+        valuefunction, dt_infer = heuristic(map, goal,**kwargs)
+        
+        env = Environment2D(goal, map, valuefunction)
+        
+        t0 = tic()
+        path_cost, path, action_idx, nodes_count, sss = AStar.eplan(start, env)
+        dt_plan = toc(t0)
+
+        if path_cost < 10e10:
+            succcount += 1
+
+        totpathcost += path_cost
+        totplantime += dt_plan
+        totinfertime += dt_infer
+        totnodesexp += nodes_count
+
+        path_array = np.asarray(path)
+        
+        if plotresults:
+            f, ax = plt.subplots()
+            drawMap(ax, map)
+            plotClosedNodes(ax,sss)
+            plotInconsistentNodes(ax,sss,env)
+            drawPath2D(ax, path_array)
+    
+
+    # Calculate averages
+    avgpathcost = totpathcost / numofmaps
+    avgplantime = totplantime / numofmaps
+    avginfertime = totinfertime / numofmaps
+    avgnodesexp = totnodesexp / numofmaps
+    avgsuccessrate = succcount / numofmaps
+
+    if printvalues:
+        print(  'Average Path Cost:', avgpathcost, 
+                '\nAverage Planning Time:', avgplantime,
+                '\nAverage Inference Time:', avginfertime, 
+                '\nAverage Number of Node Expansions:', avgnodesexp,
+                '\nAverage Success Rate:', avgsuccessrate)
+
+    return avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate
+
+
 
 
 
