@@ -2,7 +2,8 @@
 2D_Experiments/dataset/
 2D_Experiments/dump/
 
-3D_Experiments/3d_dataset_30x30x30/
+3D_Experiments/dataset/
+
 
 2D_Experiments/ablation/AblationStudy_EffectofDeepNorm/multgoal_dataset/
 2D_Experiments/ablation/AblationStudy_EffectofDeepNorm/singlegoal_dataset/
