@@ -1,12 +1,20 @@
 """
 This code uses the Planning Operator on the Maze dataset described in the paper "Planning Operator: Generalizable Robot Motion Planning via Operator Learning"
 """
-
+import os
+import sys
 import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as tvt
+
+# Add the current script directory to sys.path
+current_script_path = os.path.abspath(__file__)
+current_folder_path = os.path.dirname(current_script_path)
+
+if current_folder_path not in sys.path:
+    sys.path.append(current_folder_path)
 
 import matplotlib.pyplot as plt
 from utilities import *
@@ -17,8 +25,6 @@ from functools import partial
 
 from timeit import default_timer
 import scipy.io
-import os
-import sys
 from itertools import chain
 
 # Helpers:

@@ -1,4 +1,4 @@
-from astar.environment_abc import EnvironmentABC
+from astar3D.environment_abc import EnvironmentABC
 import numpy as np
 
 class Environment2D(EnvironmentABC):
