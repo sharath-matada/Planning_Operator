@@ -41,11 +41,22 @@ def AStateSpace(eps):
 def UpdateAStateSpace(eps, sss, env):
     goal = np.array(env.getGoal())
     # Update the pq with items from the il
-    # sss['pq'].update({state.key: (state.g + state.h, state) for state in sss['il']})
+    print("Size of sss['pq'] 1: ", len(sss['pq']))
+    sss['pq'].update({state.key: (state.g + state.h, state) for state in sss['il']})
+    print("Size of sss['pq'] 2: ", len(sss['pq']))
     
-    # Compute the combined items for the priority queue
-    # for key, (fval, state) in sss['pq'].items():
-    #     sss['pq'][key] = (state.g + env.getHeuristic(state.coord), state)
+    # # Compute the combined items for the priority queue
+    updated_pq = {}
+    i = 0
+    for key, (fval, state) in sss['pq'].items():
+        i+=10
+        new_fval = i
+        updated_pq[key] = (new_fval, state)
+
+    # Now replace the original priority queue
+    updated_pq = pqdict(updated_pq)
+
+    print("Size of sss['pq'] 3: ", len(sss['pq']))    
 
     # for s_key, old_state in sss['hm'].items():
     #     s_coord = old_state.coord
@@ -55,7 +66,7 @@ def UpdateAStateSpace(eps, sss, env):
     # Create the new state space
     a_state_space = {
         'il': [],  # Reset the inconsistent list
-        'pq': pqdict(sss['pq']),  # Initialize pqdict with combined items
+        'pq': pqdict(),  # Initialize pqdict with combined items
         'hm': sss['hm'],  # This could be copied or reset depending on your logic
         'closed_list': set(),  # Reset the closed list
         'eps': sss['eps'] + 1,
@@ -125,9 +136,14 @@ class AStar(object):
       curr = sss['pq'].popitem()[1][1]
       
 
-  def repairPlan(start_coord, env, sss, eps = 2):    
+  def repairPlan(start_coord, env, sss, eps = 1):    
       sss = UpdateAStateSpace(eps,sss,env) # Update state space
-      curr = sss['pq'].popitem()[1][1]
+      # sss = AStateSpace(eps)
+      # curr = AState(tuple(start_coord), start_coord, env.getHeuristic(start_coord)) # env.coord_to_idx(start_coord), 
+      # curr.g = 0
+      # curr.iteration_opened = sss['expands']
+
+      # Run Search with Planning Operator as heuristic eps>1 for generating sub-optimal path
       while True:
         # check if done
         if env.isGoal(curr.coord):
@@ -140,7 +156,7 @@ class AStar(object):
         sss['closed_list'].add(curr.key)
         # update heap
         AStar.__spin( curr, sss, env )
-
+        
         if not sss['pq']:
           return math.inf, deque(), deque(), sss['expands'], sss
         # remove the element with smallest cost
