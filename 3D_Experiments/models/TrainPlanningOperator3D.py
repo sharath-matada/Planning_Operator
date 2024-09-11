@@ -297,7 +297,6 @@ if __name__ == '__main__':
     # define hyperparameters
     print("Training Planning Operator")
     os.chdir("/mountvol/gibsontrainingdata")
-    torch.cuda.empty_cache()
 
     lrs = [1e-2]
     gammas = [0.5]
