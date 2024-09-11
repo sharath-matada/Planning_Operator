@@ -320,9 +320,9 @@ if __name__ == '__main__':
     scheduler_step = 100
     tol_early_stop = 500
 
-    modes = 8
+    modes = 12
     width = 24
-    nlayers = 4
+    nlayers = 5
 
     ################################################################
     # load data and data normalization
