@@ -2,6 +2,7 @@
 This code uses the Planning Operator on the Maze dataset described in the paper "Planning Operator: Generalizable Robot Motion Planning via Operator Learning"
 """
 import os
+import gc
 import sys
 import torch
 import numpy as np
@@ -311,17 +312,16 @@ if __name__ == '__main__':
     ################################################################
     Ntotal = 30*5+5*5
     ntrain = 30*5
+    ntest =  5*5
 
-    ntest = Ntotal-ntrain
-
-    batch_size = 8
+    batch_size = 4
 
     epochs = 501
     scheduler_step = 100
     tol_early_stop = 500
 
-    modes = 8
-    width = 24
+    modes = 12
+    width = 28
     nlayers = 4
 
     ################################################################
@@ -334,15 +334,15 @@ if __name__ == '__main__':
     Sy = Sx
     Sz = Sx
 
-    mask = np.load('mask.npy')
+    mask = np.load('mask.npy')[:Ntotal,:,:,:]
     mask = torch.tensor(mask, dtype=torch.float)
-    dist_in = -np.load('dist_in.npy')
+    dist_in = -np.load('dist_in.npy')[:Ntotal,:,:,:]
     dist_in = torch.tensor(dist_in[:Ntotal, :, :], dtype=torch.float)
     input = smooth_chi(mask, dist_in, smooth_coef)
-    output = np.load('output.npy')
+    output = np.load('output.npy')[:Ntotal,:,:,:]
     output = torch.tensor(output, dtype=torch.float)
 
-    goals = np.load('goals.npy')
+    goals = np.load('goals.npy')[:Ntotal,:]
     goals = torch.tensor(goals, dtype=torch.float)
 
 
@@ -420,6 +420,10 @@ if __name__ == '__main__':
                     myloss = LpLoss(size_average=False)
                     print("-" * 100)
                     model = PlanningOperator3D(modes, modes, modes, width, nlayers).to(device)
+                    if torch.cuda.device_count() > 1:
+                        model = nn.DataParallel(model)
+
+
                     print(f'>> Total number of model parameters: {count_params(model)}')
 
                     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=wd)
@@ -495,6 +499,8 @@ if __name__ == '__main__':
                                   f'runtime: {(t2 - t1):.2f}s, train loss: {train_l2:.5f} (best: '
                                   f'{best_train_loss:.5f}/{best_test_loss:.5f})')
 
+                        gc.collect()
+                        torch.cuda.empty_cache()
                         if early_stop > tol_early_stop: break
 
                     with open('%s/loss_train.txt' % base_dir, 'w') as file:
