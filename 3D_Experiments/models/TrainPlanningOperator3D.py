@@ -323,7 +323,7 @@ if __name__ == '__main__':
 
     modes = 12
     width = 28
-    nlayers = 4
+    nlayers = 5
 
     ################################################################
     # load data and data normalization
