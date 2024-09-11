@@ -294,7 +294,10 @@ def smooth_chi(mask, dist, smooth_coef):
 
 if __name__ == '__main__':
     # define hyperparameters
-    lrs = [5e-3]
+    os.chdir("/mountvol/gibsontrainingdata")
+    torch.cuda.empty_cache()
+
+    lrs = [1e-2]
     gammas = [0.5]
     wds = [3e-6]
     smooth_coefs = [5.]
@@ -306,8 +309,8 @@ if __name__ == '__main__':
     ################################################################
     #                       configs
     ################################################################
-    Ntotal = 1000*5+200*5
-    ntrain = 1000*5
+    Ntotal = 30*5+5*5
+    ntrain = 30*5
 
     ntest = Ntotal-ntrain
 
@@ -318,8 +321,8 @@ if __name__ == '__main__':
     tol_early_stop = 500
 
     modes = 8
-    width = 32
-    nlayers = 5
+    width = 24
+    nlayers = 4
 
     ################################################################
     # load data and data normalization
@@ -327,19 +330,19 @@ if __name__ == '__main__':
     t1 = default_timer()
 
     sub = 1
-    Sx = int(((30 - 1) / sub) + 1)
+    Sx = int(((128 - 1) / sub) + 1)
     Sy = Sx
     Sz = Sx
 
-    mask = np.load('./3d_dataset_1/mask.npy')
+    mask = np.load('mask.npy')
     mask = torch.tensor(mask, dtype=torch.float)
-    dist_in = np.load('./3d_dataset_1/dist_in.npy')
+    dist_in = -np.load('dist_in.npy')
     dist_in = torch.tensor(dist_in[:Ntotal, :, :], dtype=torch.float)
     input = smooth_chi(mask, dist_in, smooth_coef)
-    output = np.load('./3d_dataset_1/output.npy')
+    output = np.load('output.npy')
     output = torch.tensor(output, dtype=torch.float)
 
-    goals = np.load('./3d_dataset_1/goals.npy')
+    goals = np.load('goals.npy')
     goals = torch.tensor(goals, dtype=torch.float)
 
 
@@ -378,7 +381,7 @@ if __name__ == '__main__':
     
 
 
-    op_type = '3d_30x30x30_symmetric_norm'
+    op_type = 'gibsonenv'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -420,7 +423,7 @@ if __name__ == '__main__':
                     print(f'>> Total number of model parameters: {count_params(model)}')
 
                     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=wd)
-                    model_filename = '%s/model_depth4.ckpt' % base_dir
+                    model_filename = '%s/model3d.ckpt' % base_dir
 
                     ttrain, ttest = [], []
                     best_train_loss = best_test_loss = 1e8
