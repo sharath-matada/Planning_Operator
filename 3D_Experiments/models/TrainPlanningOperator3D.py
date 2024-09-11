@@ -314,15 +314,15 @@ if __name__ == '__main__':
     ntrain = 30*5
     ntest =  5*5
 
-    batch_size = 4
+    batch_size = 8
 
     epochs = 501
     scheduler_step = 100
     tol_early_stop = 500
 
-    modes = 8
-    width = 24
-    nlayers = 4
+    modes = 12
+    width = 32
+    nlayers = 5
 
     ################################################################
     # load data and data normalization
@@ -473,7 +473,7 @@ if __name__ == '__main__':
 
                             test_l2 /= ntest
                             ttest.append([ep, test_l2])
-                            if test_l2 < best_test_loss+0.01:
+                            if test_l2 < best_test_loss:
                                 early_stop = 0
                                 best_train_loss = train_l2
                                 best_test_loss = test_l2
