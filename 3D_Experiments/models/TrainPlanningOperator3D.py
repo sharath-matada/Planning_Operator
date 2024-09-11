@@ -422,8 +422,8 @@ if __name__ == '__main__':
                     print("-" * 100)
                     model = PlanningOperator3D(modes, modes, modes, width, nlayers).to(device)
 
-                    if torch.cuda.device_count() > 1:
-                        model = nn.DataParallel(model)
+                    # if torch.cuda.device_count() > 1:
+                    #     model = nn.DataParallel(model)
 
 
                     print(f'>> Total number of model parameters: {count_params(model)}')
