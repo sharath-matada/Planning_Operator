@@ -295,6 +295,7 @@ def smooth_chi(mask, dist, smooth_coef):
 
 if __name__ == '__main__':
     # define hyperparameters
+    print("Training Planning Operator")
     os.chdir("/mountvol/gibsontrainingdata")
     torch.cuda.empty_cache()
 
