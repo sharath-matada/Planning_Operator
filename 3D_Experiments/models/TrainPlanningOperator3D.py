@@ -315,7 +315,7 @@ if __name__ == '__main__':
     ntrain = 30*5
     ntest =  5*5
 
-    batch_size = 5
+    batch_size = 4
 
     epochs = 501
     scheduler_step = 100
@@ -323,7 +323,7 @@ if __name__ == '__main__':
 
     modes = 12
     width = 28
-    nlayers = 5
+    nlayers = 4
 
     ################################################################
     # load data and data normalization
@@ -382,7 +382,7 @@ if __name__ == '__main__':
     
 
 
-    op_type = 'gibsonenv_largebatch_job'
+    op_type = 'gibsonenv_smallbatch_job'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
