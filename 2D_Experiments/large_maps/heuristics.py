@@ -137,8 +137,58 @@ def dijkstra(map,goal):
 
     return valuefunction,dt
 
+def sdfoperator(map, model):
+    print("Hello")
+
 
 def planningoperator(map,goal,model,erosion=4):
+    '''Map is a 2D binary occupancy map with 1 representing obstacle and 0 representing free space
+    Goal is an index in the map'''
+
+    mask = 1-map
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    env_size_x, env_size_y = map.shape
+
+    t0 = tic()
+
+    # Erode Map to under approximate value function
+    eroded_map =  1-ndimage.binary_erosion(1-np.array(mask),iterations=erosion).astype(np.array(mask).dtype)
+    terode = toc(t0)
+    # print("Erode Time",terode)
+
+    # Calculate SDF of eroded map
+    sdf = calculate_signed_distance(eroded_map)
+    eroded_map = eroded_map.reshape(1,env_size_x,env_size_y,1)
+    eroded_map = torch.tensor(eroded_map,dtype=torch.float)
+    sdf = sdf.reshape(1,env_size_x,env_size_y,1)
+    sdf = torch.tensor(sdf,dtype=torch.float)
+    tsdf = toc(t0) - terode
+    # print("SDF Time",tsdf)
+
+    # Calculate Chi for smoothening
+    smooth_coef=5. #Depends on what is it trained on
+    chi = smooth_chi(eroded_map, sdf, smooth_coef).to(device)
+
+    # Load Goal Position
+    goal_coord = np.array([goal[0],goal[1]])
+    gg = goal_coord.reshape(1,2,1)
+    gg = torch.tensor(gg, dtype=torch.float).to(device)
+
+    #Infer value function 
+    valuefunction = model(chi,gg)
+    valuefunction = valuefunction.detach().cpu().numpy().reshape(env_size_x,env_size_y)
+    valuefunction = valuefunction/(mask+10e-10)
+    tno = toc(t0) - tsdf -terode
+    # print("NO time:",tno)
+
+    # Calculate Max
+    euclideanvalue, _ = euclideannorm(mask, goal)
+    valuefunction = np.maximum(euclideanvalue, valuefunction)
+    dt = toc(t0)
+
+    return valuefunction,dt
+
+def doEikplanningoperator(map,goal,model,erosion=4):
     '''Map is a 2D binary occupancy map with 1 representing obstacle and 0 representing free space
     Goal is an index in the map'''
 

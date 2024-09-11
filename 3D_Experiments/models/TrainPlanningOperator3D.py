@@ -382,7 +382,7 @@ if __name__ == '__main__':
     
 
 
-    op_type = 'gibsonenv_smallbatch_job'
+    op_type = 'gibsonenv_smallbatch_12pm_pod'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
