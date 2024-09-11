@@ -314,15 +314,15 @@ if __name__ == '__main__':
     ntrain = 30*5
     ntest =  5*5
 
-    batch_size = 8
+    batch_size = 5
 
     epochs = 501
     scheduler_step = 100
     tol_early_stop = 500
 
     modes = 12
-    width = 32
-    nlayers = 5
+    width = 28
+    nlayers = 4
 
     ################################################################
     # load data and data normalization
@@ -420,6 +420,7 @@ if __name__ == '__main__':
                     myloss = LpLoss(size_average=False)
                     print("-" * 100)
                     model = PlanningOperator3D(modes, modes, modes, width, nlayers).to(device)
+
                     if torch.cuda.device_count() > 1:
                         model = nn.DataParallel(model)
 
