@@ -296,7 +296,7 @@ def smooth_chi(mask, dist, smooth_coef):
 if __name__ == '__main__':
     # define hyperparameters
     print("Training Planning Operator")
-    os.chdir("/mountvol/gibsontrainingdata")
+    os.chdir("/mountvol/gibsonenv80")
 
     lrs = [1e-2]
     gammas = [0.5]
@@ -314,7 +314,7 @@ if __name__ == '__main__':
     ntrain = 30*5
     ntest =  5*5
 
-    batch_size = 4
+    batch_size = 10
 
     epochs = 501
     scheduler_step = 100
@@ -322,7 +322,7 @@ if __name__ == '__main__':
 
     modes = 12
     width = 28
-    nlayers = 4
+    nlayers = 5
 
     ################################################################
     # load data and data normalization
@@ -330,7 +330,7 @@ if __name__ == '__main__':
     t1 = default_timer()
 
     sub = 1
-    Sx = int(((128 - 1) / sub) + 1)
+    Sx = int(((80 - 1) / sub) + 1)
     Sy = Sx
     Sz = Sx
 
@@ -381,7 +381,7 @@ if __name__ == '__main__':
     
 
 
-    op_type = 'gibsonenv_smallbatch_12pm_pod'
+    op_type = 'gibsonenv80_l5_b8'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
