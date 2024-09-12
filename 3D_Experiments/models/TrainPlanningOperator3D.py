@@ -298,7 +298,7 @@ if __name__ == '__main__':
     print("Training Planning Operator")
     os.chdir("/mountvol/gibsonenv80")
 
-    lrs = [2e-2]
+    lrs = [1e-1]
     gammas = [0.5]
     wds = [3e-6]
     smooth_coefs = [5.]
@@ -381,7 +381,7 @@ if __name__ == '__main__':
     
 
 
-    op_type = 'gibsonenv80_l5_b15_lr2e-2_10g_12sep'
+    op_type = 'gibsonenv80_l5_b15_lr1e-1_10g_12sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
