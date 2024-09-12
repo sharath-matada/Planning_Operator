@@ -314,14 +314,14 @@ if __name__ == '__main__':
     ntrain = 30*10
     ntest =  5*10
 
-    batch_size = 15
+    batch_size = 5
 
     epochs = 801
     scheduler_step = 100
     tol_early_stop = 800
 
     modes = 12
-    width = 28
+    width = 32
     nlayers = 5
 
     ################################################################
@@ -381,7 +381,7 @@ if __name__ == '__main__':
     
 
 
-    op_type = 'gibsonenv80_l5_b15_lr1e-1_10g_12sep'
+    op_type = 'gibsonenv80_w32_l5_b5_lr1e-2_10g_12sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
