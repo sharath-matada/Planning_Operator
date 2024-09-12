@@ -321,7 +321,7 @@ if __name__ == '__main__':
     tol_early_stop = 800
 
     modes = 12
-    width = 32
+    width = 48
     nlayers = 5
 
     ################################################################
@@ -381,7 +381,7 @@ if __name__ == '__main__':
     
 
 
-    op_type = 'gibsonenv80_w32_l5_b5_lr1e-2_10g_12sep'
+    op_type = 'gibsonenv80_w48_l5_b5_lr1e-2_10g_12sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
