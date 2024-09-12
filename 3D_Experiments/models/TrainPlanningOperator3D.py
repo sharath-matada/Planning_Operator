@@ -298,7 +298,7 @@ if __name__ == '__main__':
     print("Training Planning Operator")
     os.chdir("/mountvol/gibsonenv80")
 
-    lrs = [1e-2]
+    lrs = [5e-3]
     gammas = [0.5]
     wds = [3e-6]
     smooth_coefs = [5.]
