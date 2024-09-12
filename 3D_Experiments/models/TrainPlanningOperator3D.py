@@ -381,7 +381,7 @@ if __name__ == '__main__':
     
 
 
-    op_type = 'gibsonenv80_l5_b15lr5e-4'
+    op_type = 'gibsonenv80_l5_b15_lr1e-2_12sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
