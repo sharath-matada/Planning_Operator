@@ -18,6 +18,17 @@ class AState(object):
     self.v = math.inf
     self.inconsistent = False
 
+  def copy_with_new_hval(self, new_hval):
+        new_state = AState(self.key, self.coord, new_hval)
+        new_state.g = self.g
+        new_state.parent = self.parent
+        new_state.parent_action_id = self.parent_action_id
+        new_state.iteration_opened = self.iteration_opened
+        new_state.iteration_closed = 0
+        new_state.v = self.v
+        new_state.inconsistent = False
+        return new_state  
+
   def __lt__(self, other):
     return self.g < other.g  
 
@@ -40,46 +51,46 @@ def AStateSpace(eps):
 
 def UpdateAStateSpace(eps, sss, env):
     goal = np.array(env.getGoal())
-    # Update the pq with items from the il
-    print("Size of sss['pq'] 1: ", len(sss['pq']))
-    sss['pq'].update({state.key: (state.g + state.h, state) for state in sss['il']})
-    print("Size of sss['pq'] 2: ", len(sss['pq']))
     
-    # # Compute the combined items for the priority queue
+    # Update the priority queue with g + h for each state in the inconsistent list (il)
+    sss['pq'].update({state.key: (state.g + state.h, state) for state in sss['il']})
+
     updated_pq = {}
-    i = 0
+    closed_list = sss['closed_list']
+
+    # Update the priority queue (pq), no filtering of closed list here
     for key, (fval, state) in sss['pq'].items():
-        i+=10
-        new_fval = i
+        new_fval = env.getHeuristic(state.coord) + state.g
         updated_pq[key] = (new_fval, state)
 
     # Now replace the original priority queue
     updated_pq = pqdict(updated_pq)
 
-    print("Size of sss['pq'] 3: ", len(sss['pq']))    
-
-    # for s_key, old_state in sss['hm'].items():
-    #     s_coord = old_state.coord
-    #     new_hval = env.getHeuristic(s_coord)
-    #     sss['hm'][s_key] = AState(s_key, s_coord, new_hval)
+    # Update heuristic values in the hash map (hm) and remove items that are in the closed list
+    updated_hm = {}
+    for s_key, old_state in sss['hm'].items():
+        # if s_key not in closed_list and not in il:  # Skip states that are in the closed list
+            s_coord = old_state.coord
+            new_hval = env.getHeuristic(s_coord)
+            updated_hm[s_key] = old_state.copy_with_new_hval(new_hval)
 
     # Create the new state space
     a_state_space = {
         'il': [],  # Reset the inconsistent list
-        'pq': pqdict(),  # Initialize pqdict with combined items
-        'hm': sss['hm'],  # This could be copied or reset depending on your logic
+        'pq': updated_pq,  # Initialize pqdict with updated items
+        'hm': updated_hm,  # Updated hash map with no elements from the closed list
         'closed_list': set(),  # Reset the closed list
-        'eps': sss['eps'] + 1,
+        'eps': 1,
         'eps_decrease': 0.2,
         'eps_final': 1.0,
         'eps_satisfied': math.inf,
         'expands': 0,  # Reset expands for the current search
-        'searchexpands': sss['expands'],  # Carry over the total expands
-        'use_il': True,
+        'searchexpands': sss['searchexpands'],  # Carry over the total expands
+        'use_il': False,
         'reopen_nodes': False
     }
-    
     return a_state_space
+
 
 class AStar(object):
   @staticmethod
@@ -136,31 +147,43 @@ class AStar(object):
       curr = sss['pq'].popitem()[1][1]
       
 
-  def repairPlan(start_coord, env, sss, eps = 1):    
-      sss = UpdateAStateSpace(eps,sss,env) # Update state space
-      # sss = AStateSpace(eps)
-      # curr = AState(tuple(start_coord), start_coord, env.getHeuristic(start_coord)) # env.coord_to_idx(start_coord), 
-      # curr.g = 0
-      # curr.iteration_opened = sss['expands']
+  def repairPlan(start_coord, env, sss, eps=2):    
+    # Update state space
+    sss = UpdateAStateSpace(eps, sss, env)
+    
+    goal = np.array(env.getGoal())
+    goal_key = tuple(goal)
+    goalk = sss['hm'][goal_key]
+    goal_fval = goalk.g + goalk.h
+    curr = sss['pq'].popitem()[1][1]
 
-      # Run Search with Planning Operator as heuristic eps>1 for generating sub-optimal path
-      while True:
-        # check if done
+
+    # Run Search with Planning Operator as heuristic eps > 1 for generating sub-optimal path
+    while goal_fval > sss['hm'][curr.key].g +sss['hm'][curr.key].h:
         if env.isGoal(curr.coord):
-          return AStar.__recoverPath(curr, env, sss)
-        # count the number of expands
+            return AStar.__recoverPath(curr, env, sss)
+        # count+=1
+        # print(count)
+        # Count the number of expands
         sss['expands'] += 1
-        # add curr to the Closed list
+        
+        # Add curr to the Closed list
         curr.v = curr.g
         curr.iteration_closed = sss['expands']
         sss['closed_list'].add(curr.key)
-        # update heap
-        AStar.__spin( curr, sss, env )
+        
+        # Update the heap
+        AStar.__spin(curr, sss, env)
         
         if not sss['pq']:
-          return math.inf, deque(), deque(), sss['expands'], sss
-        # remove the element with smallest cost
+            return math.inf, deque(), deque(), sss['expands'], sss
+        
+        # Remove the element with the smallest cost
         curr = sss['pq'].popitem()[1][1]
+
+    return AStar.__recoverPath(goalk, env, sss)
+
+        
 
 
   def getDistances(env, eps=1):
