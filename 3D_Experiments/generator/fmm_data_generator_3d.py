@@ -20,6 +20,13 @@ import matplotlib.pyplot as plt
 import pykonal
 import random
 
+from scipy.ndimage import distance_transform_edt
+import scipy.ndimage as ndimage
+
+def calculate_signed_distance(velocity_matrix):
+    distance = distance_transform_edt(velocity_matrix != 0)
+    return distance
+
 
 def create_dataset(maps, sdf, num_trials,goal_trials,env_size, erosion_trials = 1, a_min = 0, a_max = 1):
 
@@ -70,7 +77,8 @@ def create_dataset(maps, sdf, num_trials,goal_trials,env_size, erosion_trials = 
                     velocity_matrices_array[trial*goal_trials + goal_trial, :, :,:] = environment.reshape(env_size,env_size, env_size)
                     goals[trial * goal_trials + goal_trial,:] = goal
                     travel_time_values_array[trial * goal_trials + goal_trial, :, :, :] = solver.traveltime.values[:, :, :]
-                    signed_distance_array[trial * goal_trials + goal_trial, :, :, :] = sdf[trial,:,:,:]*maps[trial,:,:]
+                    # signed_distance_array[trial * goal_trials + goal_trial, :, :, :] = calculate_signed_distance(environment)
+                    signed_distance_array[trial * goal_trials + goal_trial, :, :, :] = sdf[trial,:,:,:]*velocity_matrix
                     high_values_mask = solver.traveltime.values[:, :, :] > 10e5
                     input_mask = (velocity_matrix == 0)
                     travel_time_values_array[trial * goal_trials + goal_trial, high_values_mask] = 0
