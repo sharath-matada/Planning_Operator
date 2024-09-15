@@ -295,7 +295,7 @@ def smooth_chi(mask, dist, smooth_coef):
 
 if __name__ == '__main__':
     # define hyperparameters
-    print("Training Planning Operator")
+    print("Started Script")
     os.chdir("/mountvol/dataset-121-hres")
 
     lrs = [1e-2]
@@ -334,6 +334,7 @@ if __name__ == '__main__':
     Sy = Sx
     Sz = Sx
 
+    print("Loading Data.......")
     mask = np.load('mask.npy')[:Ntotal,:,:,:]
     mask = torch.tensor(mask, dtype=torch.float)
     dist_in = -np.load('dist_in.npy')[:Ntotal,:,:,:]
@@ -344,6 +345,7 @@ if __name__ == '__main__':
 
     goals = np.load('goals.npy')[:Ntotal,:]
     goals = torch.tensor(goals, dtype=torch.float)
+    print("Data Loaded!")
 
 
     mask_train = mask[:Ntotal][:ntrain, ::sub, ::sub, ::sub][:, :Sx, :Sy, :Sz]
@@ -378,9 +380,7 @@ if __name__ == '__main__':
                                               batch_size=batch_size,
                                               shuffle=False)
     
-    
-
-
+    print("Training Started")
     op_type = 'gibsonenv121_w48_l5_b5_lr1e-2_10g_15sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
