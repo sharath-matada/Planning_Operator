@@ -28,7 +28,7 @@ def calculate_signed_distance(velocity_matrix):
     return distance
 
 
-def create_dataset(maps, sdf, num_trials,goal_trials,env_size, erosion_trials = 1, a_min = 0, a_max = 1):
+def create_dataset(maps, num_trials,goal_trials,env_size, erosion_trials = 1, a_min = 0, a_max = 1):
 
     count = 0
     a_min = 0
@@ -53,12 +53,13 @@ def create_dataset(maps, sdf, num_trials,goal_trials,env_size, erosion_trials = 
             high_values_mask = None
             if passable_indices.size > 0:
                 if(trial * goal_trials + goal_trial!=count):
+                    print("count not matching")
                     break
+
 
                 environment = np.array(original_maze)
                 while np.all(travel_time_values_array[trial * goal_trials + goal_trial, :, :, :] == 0):
                     velocity_matrix = environment
-
                     goal_index = random.choice(passable_indices)
                     goal = goal_index[0], goal_index[1], goal_index[2]
 
@@ -77,12 +78,14 @@ def create_dataset(maps, sdf, num_trials,goal_trials,env_size, erosion_trials = 
                     velocity_matrices_array[trial*goal_trials + goal_trial, :, :,:] = environment.reshape(env_size,env_size, env_size)
                     goals[trial * goal_trials + goal_trial,:] = goal
                     travel_time_values_array[trial * goal_trials + goal_trial, :, :, :] = solver.traveltime.values[:, :, :]
-                    # signed_distance_array[trial * goal_trials + goal_trial, :, :, :] = calculate_signed_distance(environment)
-                    signed_distance_array[trial * goal_trials + goal_trial, :, :, :] = sdf[trial,:,:,:]*velocity_matrix
+                    signed_distance_array[trial * goal_trials + goal_trial, :, :, :] = calculate_signed_distance(environment)
                     high_values_mask = solver.traveltime.values[:, :, :] > 10e5
                     input_mask = (velocity_matrix == 0)
                     travel_time_values_array[trial * goal_trials + goal_trial, high_values_mask] = 0
 
+                if(high_values_mask!=input_mask).all():
+                    continue    
+                
                 if(high_values_mask!=input_mask).any():
                     velocity_matrices_array[trial * goal_trials + goal_trial, high_values_mask] = 0
 
