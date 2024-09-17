@@ -312,11 +312,11 @@ if __name__ == '__main__':
     ################################################################
     #                       configs
     ################################################################
-    Ntotal = 32*1+8*1
-    ntrain = 32*1
-    ntest =  8*1
+    Ntotal = 32*10+8*10
+    ntrain = 32*10
+    ntest =  8*10
 
-    batch_size = 1
+    batch_size = 10
 
     epochs = 801
     scheduler_step = 100
@@ -383,7 +383,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'igibsonenv80_w48_l5_b5_lr1e-2_1g_17sep'
+    op_type = 'igibsonenv80_w48_l5_b5_lr1e-2_10g_17sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -449,7 +449,7 @@ if __name__ == '__main__':
 
                             optimizer.zero_grad()
                             out = model(xx,gg)
-                            print(out[0,40,40,10:13,0])
+                            # print(out[0,40,40,10:13,0])
 
                             out = out*mm
                             yy= yy*mm
