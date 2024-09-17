@@ -34,9 +34,9 @@ def create_dataset(maps, num_trials,goal_trials,env_size, erosion_trials = 1, a_
     a_min = 0
     a_max = 1
 
-    velocity_matrices_array = np.ones((num_trials*goal_trials*erosion_trials, env_size, env_size, env_size))
-    travel_time_values_array = np.zeros((num_trials*goal_trials*erosion_trials, env_size, env_size, env_size))
-    signed_distance_array = np.zeros((num_trials*goal_trials*erosion_trials,env_size,env_size, env_size))
+    velocity_matrices_array = np.ones((num_trials*goal_trials*erosion_trials, env_size[0], env_size[1], env_size[2]))
+    travel_time_values_array = np.zeros((num_trials*goal_trials*erosion_trials, env_size[0], env_size[1], env_size[2]))
+    signed_distance_array = np.zeros((num_trials*goal_trials*erosion_trials,env_size[0],env_size[1], env_size[2]))
     goals = np.zeros((num_trials*goal_trials*erosion_trials, 3))
 
     
@@ -45,7 +45,7 @@ def create_dataset(maps, num_trials,goal_trials,env_size, erosion_trials = 1, a_
         original_maze = im_np
         condition1 = original_maze == 1
         row_indices, col_indices, z_indices = np.indices(original_maze.shape)
-        condition2 = (row_indices < env_size) & (col_indices < env_size) & (z_indices < env_size)
+        condition2 = (row_indices < env_size[0]) & (col_indices < env_size[1]) & (z_indices < env_size[2])
         combined_condition = condition1 & condition2
 
         for goal_trial in range(goal_trials):
@@ -67,15 +67,15 @@ def create_dataset(maps, num_trials,goal_trials,env_size, erosion_trials = 1, a_
                     solver = pykonal.EikonalSolver(coord_sys="cartesian")
                     solver.velocity.min_coords = 0, 0, 0
                     solver.velocity.node_intervals = 1, 1, 1
-                    solver.velocity.npts = env_size, env_size, env_size
-                    solver.velocity.values = velocity_matrix.reshape(env_size, env_size, env_size)
+                    solver.velocity.npts = env_size[0], env_size[1], env_size[2]
+                    solver.velocity.values = velocity_matrix.reshape(env_size[0], env_size[1], env_size[2])
                     src_idx = goal[0], goal[1], goal[2]
                     solver.traveltime.values[src_idx] = 0
                     solver.unknown[src_idx] = False
                     solver.trial.push(*src_idx)
                     solver.solve()
 
-                    velocity_matrices_array[trial*goal_trials + goal_trial, :, :,:] = environment.reshape(env_size,env_size, env_size)
+                    velocity_matrices_array[trial*goal_trials + goal_trial, :, :,:] = environment.reshape(env_size[0],env_size[1], env_size[2])
                     goals[trial * goal_trials + goal_trial,:] = goal
                     travel_time_values_array[trial * goal_trials + goal_trial, :, :, :] = solver.traveltime.values[:, :, :]
                     signed_distance_array[trial * goal_trials + goal_trial, :, :, :] = calculate_signed_distance(environment)

@@ -230,7 +230,9 @@ class PlanningOperator3D(nn.Module):
 
     def forward(self, chi, gs):
         batchsize = chi.shape[0]
-        size_x = size_y = size_z = chi.shape[1]
+        size_x = chi.shape[1]
+        size_y = chi.shape[2]
+        size_z = chi.shape[3]
 
         grid = self.get_grid(batchsize, size_x, size_y, size_z, chi.device)
 
@@ -296,7 +298,7 @@ def smooth_chi(mask, dist, smooth_coef):
 if __name__ == '__main__':
     # define hyperparameters
     print("Started Script")
-    os.chdir("/mountvol/dataset-121-hres")
+    os.chdir("/mountvol/dataset-80-igib")
 
     lrs = [1e-2]
     gammas = [0.5]
@@ -310,11 +312,11 @@ if __name__ == '__main__':
     ################################################################
     #                       configs
     ################################################################
-    Ntotal = 30*10+5*10
-    ntrain = 30*10
-    ntest =  5*10
+    Ntotal = 32*1+8*1
+    ntrain = 32*1
+    ntest =  8*1
 
-    batch_size = 5
+    batch_size = 1
 
     epochs = 801
     scheduler_step = 100
@@ -330,15 +332,15 @@ if __name__ == '__main__':
     t1 = default_timer()
 
     sub = 1
-    Sx = int(((121 - 1) / sub) + 1)
+    Sx = int(((80 - 1) / sub) + 1)
     Sy = Sx
-    Sz = Sx
+    Sz = int(((25 - 1) / sub) + 1)
 
     print("Loading Data.......")
     mask = np.load('mask.npy')[:Ntotal,:,:,:]
     mask = torch.tensor(mask, dtype=torch.float)
-    dist_in = -np.load('dist_in.npy')[:Ntotal,:,:,:]
-    dist_in = torch.tensor(dist_in[:Ntotal, :, :], dtype=torch.float)
+    dist_in = np.load('dist_in.npy')[:Ntotal,:,:,:]
+    dist_in = torch.tensor(dist_in[:Ntotal, :, :, :], dtype=torch.float)
     input = smooth_chi(mask, dist_in, smooth_coef)
     output = np.load('output.npy')[:Ntotal,:,:,:]
     output = torch.tensor(output, dtype=torch.float)
@@ -381,7 +383,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'gibsonenv121_w48_l5_b5_lr1e-2_10g_15sep'
+    op_type = 'igibsonenv80_w48_l5_b5_lr1e-2_1g_17sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -443,14 +445,19 @@ if __name__ == '__main__':
                         for mm, xx, yy, gg in train_loader:
                             mm, xx, yy, gg = mm.to(device), xx.to(device), yy.to(device), gg.to(device)
 
+                            # print(yy)
+
                             optimizer.zero_grad()
                             out = model(xx,gg)
+                            print(out[0,40,40,10:13,0])
 
                             out = out*mm
                             yy= yy*mm
+                            # print(out[0,40,40,10:13,0])
 
                             loss = myloss(out, yy)
                             train_l2 += loss.item()
+                            # print(loss)
 
                             loss.backward()
                             optimizer.step()
