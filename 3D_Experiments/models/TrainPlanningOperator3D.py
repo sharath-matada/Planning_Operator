@@ -300,8 +300,8 @@ if __name__ == '__main__':
     print("Started Script")
     os.chdir("/mountvol/dataset-80-igib")
 
-    lrs = [1e-2]
-    gammas = [0.5]
+    lrs = [1e-3]
+    gammas = [0.8]
     wds = [3e-6]
     smooth_coefs = [5.]
     smooth_coef = smooth_coefs[0]
@@ -322,9 +322,9 @@ if __name__ == '__main__':
     scheduler_step = 100
     tol_early_stop = 800
 
-    modes = 12
-    width = 48
-    nlayers = 5
+    modes = 5
+    width = 6
+    nlayers = 1
 
     ################################################################
     # load data and data normalization
@@ -383,7 +383,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'igibsonenv80_w48_l5_b5_lr1e-2_10g_17sep'
+    op_type = 'igibsonenv80_w6_l1_b10_lr1e-3_10g_17sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
