@@ -298,10 +298,10 @@ def smooth_chi(mask, dist, smooth_coef):
 if __name__ == '__main__':
     # define hyperparameters
     print("Started Script")
-    os.chdir("/mountvol/dataset-80-igib")
+    os.chdir("/mountvol/dataset-120")
 
-    lrs = [1e-3]
-    gammas = [0.8]
+    lrs = [3e-3]
+    gammas = [0.6]
     wds = [3e-6]
     smooth_coefs = [5.]
     smooth_coef = smooth_coefs[0]
@@ -322,9 +322,9 @@ if __name__ == '__main__':
     scheduler_step = 100
     tol_early_stop = 800
 
-    modes = 5
-    width = 6
-    nlayers = 1
+    modes = 8
+    width = 18
+    nlayers = 2
 
     ################################################################
     # load data and data normalization
@@ -332,9 +332,9 @@ if __name__ == '__main__':
     t1 = default_timer()
 
     sub = 1
-    Sx = int(((80 - 1) / sub) + 1)
+    Sx = int(((120 - 1) / sub) + 1)
     Sy = Sx
-    Sz = int(((25 - 1) / sub) + 1)
+    Sz = int(((48 - 1) / sub) + 1)
 
     print("Loading Data.......")
     mask = np.load('mask.npy')[:Ntotal,:,:,:]
@@ -383,7 +383,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'igibsonenv80_w6_l1_b10_lr1e-3_10g_17sep'
+    op_type = 'igibsonenv120_m8_w18_l2_b10_lr3e-3_10g_18sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
