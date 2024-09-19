@@ -305,7 +305,7 @@ def smooth_chi(mask, dist, smooth_coef):
 if __name__ == '__main__':
     # define hyperparameters
     print("Started Script")
-    os.chdir("/mountvol/dataset-120")
+    os.chdir("/mountvol/dataset-120-20g")
 
     lrs = [3e-3]
     gammas = [0.6]
@@ -319,11 +319,11 @@ if __name__ == '__main__':
     ################################################################
     #                       configs
     ################################################################
-    Ntotal = 32*10+8*10
-    ntrain = 32*10
-    ntest =  8*10
+    Ntotal = 32*10+8*20
+    ntrain = 32*20
+    ntest =  8*20
 
-    batch_size = 10
+    batch_size = 12
 
     epochs = 801
     scheduler_step = 100
@@ -390,7 +390,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'igibsonenv120_m6_w12_l1_b10_lr3e-3_10g_18sep'
+    op_type = 'igibsonenv120_m6_w12_l1_b10_lr3e-3_20g_19sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
