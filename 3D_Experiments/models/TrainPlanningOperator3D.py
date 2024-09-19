@@ -256,8 +256,15 @@ class PlanningOperator3D(nn.Module):
         x = x.permute(0, 2, 3, 4, 1)
         g = x.clone()
 
-        batch_indices = np.arange(batchsize)
-        g[batch_indices] = x[batch_indices, gs[batch_indices, 0, 0].astype(int), gs[batch_indices, 1, 0].astype(int), gs[batch_indices, 2, 0].astype(int), :]
+        batch_indices = torch.arange(batchsize, device=gs.device)  # Ensure indices are on the same device
+
+        x_indices = gs[:, 0, 0].long()  # Shape: [batchsize]
+        y_indices = gs[:, 1, 0].long()  # Shape: [batchsize]
+        z_indices = gs[:, 2, 0].long()  # Shape: [batchsize]
+
+        # Index into x to get the values for each batch element at the specified (x, y, z) coordinates
+        g = x[batch_indices, x_indices, y_indices, z_indices, :]  # Shape: [batchsize, C]
+        g = g.unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1, size_x, size_y, size_z, 1)
 
         x = x.reshape(-1,self.width)
         g = g.reshape(-1,self.width)
@@ -322,8 +329,8 @@ if __name__ == '__main__':
     scheduler_step = 100
     tol_early_stop = 800
 
-    modes = 5
-    width = 24
+    modes = 6
+    width = 12
     nlayers = 1
 
     ################################################################
@@ -383,7 +390,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'igibsonenv120_m5_w24_l1_b10_lr3e-3_10g_18sep'
+    op_type = 'igibsonenv120_m6_w12_l1_b10_lr3e-3_10g_18sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
