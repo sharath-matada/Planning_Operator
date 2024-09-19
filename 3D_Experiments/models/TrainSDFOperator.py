@@ -74,7 +74,7 @@ class SimpleBlock2d(nn.Module):
         self.modes2 = modes2
         self.modes3 = modes3
         self.width = width
-        self.fc0 = nn.Linear(13, self.width)
+        self.fc0 = nn.Linear(3, self.width)
 
         self.conv0 = SpectralConv3d_fast(self.width, self.width, self.modes1, self.modes2, self.modes3)
         self.conv1 = SpectralConv3d_fast(self.width, self.width, self.modes1, self.modes2, self.modes3)
@@ -131,6 +131,7 @@ class Net2d(nn.Module):
 
 
     def forward(self, x):
+        print("Forward Input Shape:",x.shape)
         x = self.conv1(x)
         return x.squeeze()
 
@@ -143,15 +144,21 @@ class Net2d(nn.Module):
         return c
     
 def LR_schedule(learning_rate, steps, scheduler_step, scheduler_gamma):
-    return learning_rate * np.power(scheduler_gamma, (steps // scheduler_step))    
+    return learning_rate * np.power(scheduler_gamma, (steps // scheduler_step))   
+
+def scheduler(optimizer, lr):
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+    return optimizer
+
 
 ################################################################
 # configs
 ################################################################
 if __name__ == '__main__':
     print("Started Script")
-    os.chdir("/mountvol/dataset-120")
-    lrs = [1e-3]
+    os.chdir("/mountvol/dataset-80-15g")
+    lrs = [3e-3]
     gammas = [0.8]
     wds = [3e-6]
     smooth_coefs = [5.]
@@ -163,11 +170,8 @@ if __name__ == '__main__':
     ################################################################
     #                       configs
     ################################################################
-    Ntotal = 32*10+8*10
-    ntrain = 32*10
-    ntest =  8*10
-
-    batch_size = 10
+   
+    batch_size = 20
 
     epochs = 801
     scheduler_step = 100
@@ -182,26 +186,37 @@ if __name__ == '__main__':
     t1 = default_timer()
 
     sub = 1
-    Sx = int(((120 - 1) / sub) + 1)
+    Sx = int(((80 - 1) / sub) + 1)
     Sy = Sx
-    Sz = int(((48 - 1) / sub) + 1)
+    Sz = int(((30 - 1) / sub) + 1)
+
+    Ntotal = 32+8
+    ntrain = 32
+    ntest =  8
 
     print("Loading Data.......")
-    mask = np.load('mask.npy')[:Ntotal,:,:,:]
+    mask = np.load('mask.npy')
     mask = torch.tensor(mask, dtype=torch.float)
-    output = np.load('dist_in.npy')[:Ntotal,:,:,:]
+    output = np.load('dist_in.npy')
     output = torch.tensor(output, dtype=torch.float)
     print("Data Loaded!")
 
-    mask_train = mask[:Ntotal][:ntrain, ::sub, ::sub, ::sub][:, :Sx, :Sy, :Sz]
-    mask_test = mask[:Ntotal][-ntest:, ::sub, ::sub, ::sub][:, :Sx, :Sy, :Sz]
+    print(mask.shape)
 
+    # Selecting every 15th mask
+    mask_train = mask[:ntrain*15:15, ::sub, ::sub, ::sub][:, :Sx, :Sy, :Sz]
+    mask_test = mask[-ntest*15::15, ::sub, ::sub, ::sub][:, :Sx, :Sy, :Sz]
+
+    print(mask_train.shape)
+
+    # Reshape to add the channel dimension
     mask_train = mask_train.reshape(ntrain, Sx, Sy, Sz, 1)
     mask_test = mask_test.reshape(ntest, Sx, Sy, Sz, 1)
 
+    # Similarly for output (y_train and y_test)
+    y_train = output[:ntrain*15:15, ::sub, ::sub, ::sub][:, :Sx, :Sy, :Sz]
+    y_test = output[-ntest*15::15, ::sub, ::sub, ::sub][:, :Sx, :Sy, :Sz]
 
-    y_train = output[:Ntotal][:ntrain, ::sub, ::sub, ::sub][:, :Sx, :Sy, :Sz]
-    y_test = output[:Ntotal][-ntest:, ::sub, ::sub, ::sub][:, :Sx, :Sy, :Sz]
 
     y_normalizer = GaussianNormalizer(y_train)
     y_train = y_normalizer.encode(y_train)
@@ -219,8 +234,8 @@ if __name__ == '__main__':
 
 
     print("Training Started")
-    op_type = 'igibsonenv_sdf_120_m8_w18_l2_b10_lr3e-3_10g_18sep'
-    res_dir = './planningoperator3D_%s' % op_type
+    op_type = 'igibsonenv_sdf_80_m8_w18_l2_b20_lr3e-3_18sep'
+    res_dir = './sdfoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
 
@@ -245,11 +260,30 @@ if __name__ == '__main__':
     ################################################################
     # training and evaluation
     ################################################################
-    model = Net2d(modes, width).cuda()
+   
     # model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
 
+  
+
+
+    ################################################################
+    #                      train and eval
+    ################################################################
+    myloss = LpLoss(size_average=False)
+    print("-" * 100)
+    model  = Net2d(modes, width).to(device)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=lrs[0], weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=gammas[0])
+
+    # if torch.cuda.device_count() > 1:
+    #     model = nn.DataParallel(model)
+
+    print(f'>> Total number of model parameters: {model.count_params()}')
+
+    ttrain, ttest = [], []
+    best_train_loss = best_test_loss = 1e8
+    best_epoch = 0
+    early_stop = 0
 
     for learning_rate in lrs:
             for scheduler_gamma in gammas:
@@ -261,7 +295,7 @@ if __name__ == '__main__':
 
                         print(f'>> random seed: {isd}')
 
-                        base_dir = './planningoperator_%s/n%d_lr%e_gamma%e_wd%e_seed%d' % (op_type, ntrain, learning_rate,
+                        base_dir = './sdfoperator_%s/n%d_lr%e_gamma%e_wd%e_seed%d' % (op_type, ntrain, learning_rate,
                                                                                 scheduler_gamma, wd, isd)
                         if not os.path.exists(base_dir):
                             os.makedirs(base_dir)
@@ -280,7 +314,7 @@ if __name__ == '__main__':
                         print(f'>> Total number of model parameters: {model.count_params()}')
 
                         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=wd)
-                        model_filename = '%s/model3d.ckpt' % base_dir
+                        model_filename = '%s/model3dsdf.ckpt' % base_dir
 
                         ttrain, ttest = [], []
                         best_train_loss = best_test_loss = 1e8
@@ -289,7 +323,7 @@ if __name__ == '__main__':
                         for ep in range(epochs):
                             t1 = default_timer()
                             optimizer = scheduler(optimizer,
-                                                LR_schedule(learning_rate, ep, scheduler_step, scheduler_gamma))
+                                              LR_schedule(learning_rate, ep, scheduler_step, scheduler_gamma))
                             model.train()
                             train_l2 = 0
                             for xx, yy in train_loader:

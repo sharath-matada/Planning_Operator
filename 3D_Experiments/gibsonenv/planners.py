@@ -47,16 +47,17 @@ def generaterandompos(maps):
     "Generates random positions in the free space of given maps"
 
     numofmaps = maps.shape[0]
-    env_size = maps.shape[1]
-    pos = np.zeros((numofmaps,3))
+    size_x = maps.shape[1]
+    size_y = maps.shape[2]
+    size_z = maps.shape[3]
 
-    assert maps.shape[1] == maps.shape[2] == maps.shape[3]
+    pos = np.zeros((numofmaps,3))
 
     for i,map in enumerate(maps):
 
         condition1 = map == 1
         row_indices, col_indices, z_indices = np.indices(map.shape)
-        condition2 = (row_indices < env_size) & (col_indices < env_size) & ((z_indices < env_size))
+        condition2 = (row_indices < size_x) & (col_indices < size_y) & ((z_indices < size_z))
         combined_condition = condition1 & condition2
         passable_indices = np.argwhere(combined_condition)
         point = random.choice(passable_indices)
@@ -203,17 +204,19 @@ def FMMPlanner(start, goal, map):
     
 
 def PlanningOperatorPlanner(start, goal, map, model):
-    mask = 1-map
+    mask = map
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     env_size_x, env_size_y, env_size_z = map.shape[0],map.shape[1],map.shape[2]
 
-    t0 = tic()
     # Calculate SDF of eroded map
-    map = map.reshape(1,env_size_x,env_size_y,1)
+    map = map.reshape(1,env_size_x,env_size_y,env_size_z,1)
     map = torch.tensor(map,dtype=torch.float)
 
+    t0 = tic()
     sdf = calculate_signed_distance(mask)
-    sdf = sdf.reshape(1,env_size_x,env_size_y,1)
+    dt_sdf = toc(t0)
+
+    sdf = sdf.reshape(1,env_size_x,env_size_y,env_size_z,1)
     sdf = torch.tensor(sdf,dtype=torch.float)
 
     # Calculate Chi for smoothening
@@ -229,11 +232,14 @@ def PlanningOperatorPlanner(start, goal, map, model):
     valuefunction = model(chi,gg)
     valuefunction = valuefunction.detach().cpu().numpy().reshape(env_size_x,env_size_y, env_size_z)
     valuefunction = valuefunction/(mask+10e-10)
+    dt_val = toc(t0) - dt_sdf
 
     success, pathlength = perform_gradient_descent(valuefunction,start,goal)
+    dt_gd = toc(t0) - dt_sdf - dt_val
+
     dt = toc(t0)
 
-    return success, pathlength, dt
+    return success, pathlength, dt, dt_sdf, dt_val, dt_gd
 
 
 def DoEikPlanningOperatorPlanner(start, goal, map, sdf_model, val_model):
