@@ -24,6 +24,8 @@ from itertools import chain
 import time
 import pykonal
 
+from scipy.ndimage import distance_transform_edt
+
 
 from scipy.io import loadmat
 from astar3D.astar import  AStar
@@ -36,6 +38,10 @@ from astar3D.utilities import tic, toc
 
 
 from models.TrainPlanningOperator3D import PlanningOperator3D, smooth_chi
+
+def calculate_signed_distance(velocity_matrix):
+    distance = distance_transform_edt(velocity_matrix != 0)
+    return distance
 
 def generaterandompos(maps):
     "Generates random positions in the free space of given maps"
@@ -178,16 +184,14 @@ def AStarPlanner(start, goal, map):
     return True, path_cost, dt
 
 def FMMPlanner(start, goal, map):
-    envsize = map.shape[0]
-    assert map.shape[0] == map.shape[1] == map.shape[2]
-    Sx = Sy = Sz = envsize
+    env_size_x, env_size_y, env_size_z = map.shape[0],map.shape[1],map.shape[2]
     t1 = tic()
     solver = pykonal.EikonalSolver(coord_sys = "Cartesian")
     velocity_matrix  = map
     solver.velocity.min_coords = 0, 0, 0
     solver.velocity.node_intervals = 1, 1, 1
-    solver.velocity.npts = Sx, Sy, Sz
-    solver.velocity.values = velocity_matrix.reshape(Sx, Sy, Sz)
+    solver.velocity.npts = env_size_x, env_size_y, env_size_z
+    solver.velocity.values = velocity_matrix.reshape(env_size_x, env_size_y, env_size_z)
     src_idx = goal[0].astype(int), goal[1].astype(int), goal[2].astype(int)
     solver.traveltime.values[src_idx] = 0
     solver.unknown[src_idx] = False
@@ -197,6 +201,126 @@ def FMMPlanner(start, goal, map):
     dt = toc(t1)
     return success, pathlength, dt
     
+
+def PlanningOperatorPlanner(start, goal, map, model):
+    mask = 1-map
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    env_size_x, env_size_y, env_size_z = map.shape[0],map.shape[1],map.shape[2]
+
+    t0 = tic()
+    # Calculate SDF of eroded map
+    map = map.reshape(1,env_size_x,env_size_y,1)
+    map = torch.tensor(map,dtype=torch.float)
+
+    sdf = calculate_signed_distance(mask)
+    sdf = sdf.reshape(1,env_size_x,env_size_y,1)
+    sdf = torch.tensor(sdf,dtype=torch.float)
+
+    # Calculate Chi for smoothening
+    smooth_coef=5. #Depends on what is it trained on
+    chi = smooth_chi(map, sdf, smooth_coef).to(device)
+
+    # Load Goal Position
+    goal_coord = np.array([goal[0],goal[1],goal[2]])
+    gg = goal_coord.reshape(1,3,1)
+    gg = torch.tensor(gg, dtype=torch.float).to(device)
+
+    #Infer value function 
+    valuefunction = model(chi,gg)
+    valuefunction = valuefunction.detach().cpu().numpy().reshape(env_size_x,env_size_y, env_size_z)
+    valuefunction = valuefunction/(mask+10e-10)
+
+    success, pathlength = perform_gradient_descent(valuefunction,start,goal)
+    dt = toc(t0)
+
+    return success, pathlength, dt
+
+
+def DoEikPlanningOperatorPlanner(start, goal, map, sdf_model, val_model):
+    mask = 1-map
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    env_size_x, env_size_y, env_size_z = map.shape[0],map.shape[1],map.shape[2]
+
+    t0 = tic()
+    map = map.reshape(1,env_size_x,env_size_y,1)
+    map = torch.tensor(map,dtype=torch.float).to(device)
+
+    #Infer Signed Distance Function
+    sdf = sdf_model(mask)
+    sdf = sdf.detach().cpu().numpy()
+
+    # Calculate Chi for smoothening
+    smooth_coef=5. #Depends on what is it trained on
+    chi = smooth_chi(map, sdf, smooth_coef).to(device)
+
+    # Load Goal Position
+    goal_coord = np.array([goal[0],goal[1],goal[2]])
+    gg = goal_coord.reshape(1,3,1)
+    gg = torch.tensor(gg, dtype=torch.float).to(device)
+
+    #Infer value function 
+    valuefunction = val_model(chi,gg)
+    valuefunction = valuefunction.detach().cpu().numpy().reshape(env_size_x,env_size_y, env_size_z)
+    valuefunction = valuefunction/(mask+10e-10)
+
+    success, pathlength = perform_gradient_descent(valuefunction,start,goal)
+    dt = toc(t0)
+
+    return success, pathlength, dt
+
+def testplanneronmap(starts, goals, maps, planner, plotresults = False, printvalues = True, **kwargs):
+    avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate = 0, 0, 0, 0, 0
+    totpathcost, totplantime, totinfertime, totnodesexp, succcount = 0, 0, 0, 0, 0
+
+    numofmaps = maps.shape[0]
+
+    # for start, goal, map in zip(starts, goals, 1-maps):
+    #     do nothing
+
+    # Calculate averages
+    avgpathcost = totpathcost / numofmaps
+    avgplantime = totplantime / numofmaps
+    avginfertime = totinfertime / numofmaps
+    avgnodesexp = totnodesexp / numofmaps
+    avgsuccessrate = succcount / numofmaps
+
+    if printvalues:
+        print(  'Average Path Cost:', avgpathcost, 
+                '\nAverage Planning Time:', avgplantime,
+                '\nAverage Inference Time:', avginfertime, 
+                '\nAverage Number of Node Expansions:', avgnodesexp,
+                '\nAverage Success Rate:', avgsuccessrate)
+
+    return avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate
+
+
+
+
+def testplanneronmaps(starts, goals, maps, planner, plotresults = False, printvalues = True, **kwargs):
+    avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate = 0, 0, 0, 0, 0
+    totpathcost, totplantime, totinfertime, totnodesexp, succcount = 0, 0, 0, 0, 0
+
+    numofmaps = maps.shape[0]
+
+    # for start, goal, map in zip(starts, goals, 1-maps):
+    #     do nothing
+
+    # Calculate averages
+    avgpathcost = totpathcost / numofmaps
+    avgplantime = totplantime / numofmaps
+    avginfertime = totinfertime / numofmaps
+    avgnodesexp = totnodesexp / numofmaps
+    avgsuccessrate = succcount / numofmaps
+
+    if printvalues:
+        print(  'Average Path Cost:', avgpathcost, 
+                '\nAverage Planning Time:', avgplantime,
+                '\nAverage Inference Time:', avginfertime, 
+                '\nAverage Number of Node Expansions:', avgnodesexp,
+                '\nAverage Success Rate:', avgsuccessrate)
+
+    return avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate
+
 # def RRTPlanner(start, goal, map):
 #     environment = map
 #     space = ob.RealVectorStateSpace(3)
@@ -290,63 +414,4 @@ def FMMPlanner(start, goal, map):
     
 #     return False, np.float('inf'), np.float('inf')
 
-
-def PlanningOperatorPlanner(start, goal, map, sdf, model):
-    mask = 1-map
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    env_size_x, env_size_y, env_size_z = map.shape
-
-    t0 = tic()
-    # Calculate SDF of eroded map
-    map = map.reshape(1,env_size_x,env_size_y,1)
-    map = torch.tensor(map,dtype=torch.float)
-
-    sdf = sdf.reshape(1,env_size_x,env_size_y,1)
-    sdf = torch.tensor(sdf,dtype=torch.float)
-
-    # Calculate Chi for smoothening
-    smooth_coef=5. #Depends on what is it trained on
-    chi = smooth_chi(map, sdf, smooth_coef).to(device)
-
-    # Load Goal Position
-    goal_coord = np.array([goal[0],goal[1],goal[2]])
-    gg = goal_coord.reshape(1,3,1)
-    gg = torch.tensor(gg, dtype=torch.float).to(device)
-
-    #Infer value function 
-    valuefunction = model(chi,gg)
-    valuefunction = valuefunction.detach().cpu().numpy().reshape(env_size_x,env_size_y, env_size_z)
-    valuefunction = valuefunction/(mask+10e-10)
-
-    success, pathlength = perform_gradient_descent(valuefunction,start,goal)
-    dt = toc(t0)
-
-    return success, pathlength, dt
-
-
-
-def testplanneronmaps(starts, goals, maps, planner, plotresults = False, printvalues = True, **kwargs):
-    avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate = 0, 0, 0, 0, 0
-    totpathcost, totplantime, totinfertime, totnodesexp, succcount = 0, 0, 0, 0, 0
-
-    numofmaps = maps.shape[0]
-
-    # for start, goal, map in zip(starts, goals, 1-maps):
-    #     do nothing
-
-    # Calculate averages
-    avgpathcost = totpathcost / numofmaps
-    avgplantime = totplantime / numofmaps
-    avginfertime = totinfertime / numofmaps
-    avgnodesexp = totnodesexp / numofmaps
-    avgsuccessrate = succcount / numofmaps
-
-    if printvalues:
-        print(  'Average Path Cost:', avgpathcost, 
-                '\nAverage Planning Time:', avgplantime,
-                '\nAverage Inference Time:', avginfertime, 
-                '\nAverage Number of Node Expansions:', avgnodesexp,
-                '\nAverage Success Rate:', avgsuccessrate)
-
-    return avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate
 
