@@ -324,7 +324,7 @@ if __name__ == '__main__':
 
     modes = 8
     width = 18
-    nlayers = 2
+    nlayers = 1
 
     ################################################################
     # load data and data normalization
@@ -383,7 +383,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'igibsonenv120_m8_w18_l2_b10_lr3e-3_10g_18sep'
+    op_type = 'igibsonenv120_m8_w18_l1_b10_lr3e-3_10g_18sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
