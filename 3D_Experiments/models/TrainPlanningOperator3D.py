@@ -256,22 +256,17 @@ class PlanningOperator3D(nn.Module):
         x = x.permute(0, 2, 3, 4, 1)
         g = x.clone()
 
-        batch_indices = torch.arange(batchsize, device=gs.device)  # Ensure indices are on the same device
-
-        x_indices = gs[:, 0, 0].long()  # Shape: [batchsize]
-        y_indices = gs[:, 1, 0].long()  # Shape: [batchsize]
-        z_indices = gs[:, 2, 0].long()  # Shape: [batchsize]
-
-        # Index into x to get the values for each batch element at the specified (x, y, z) coordinates
-        g = x[batch_indices, x_indices, y_indices, z_indices, :]  # Shape: [batchsize, C]
-        g = g.unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1, size_x, size_y, size_z, 1)
+        for i in range(batchsize):
+                g[i, :, :, :,:] = x[i, int(gs[i,0,0]), int(gs[i,1,0]),int(gs[i,2,0]), :]
 
         x = x.reshape(-1,self.width)
         g = g.reshape(-1,self.width)
 
-        # Lifting layer:
+        # Projection Layer
         output = self.fc1(x,g)
+        # print(output.shape)
         output = output.reshape(batchsize,size_x,size_y,size_z,1)
+        # output = torch.randn(batchsize, size_x, size_y, size_z, 1)
 
         return output
 
