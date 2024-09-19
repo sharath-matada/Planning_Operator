@@ -256,8 +256,8 @@ class PlanningOperator3D(nn.Module):
         x = x.permute(0, 2, 3, 4, 1)
         g = x.clone()
 
-        for i in range(batchsize):
-                g[i, :, :, :,:] = x[i, int(gs[i,0,0]), int(gs[i,1,0]),int(gs[i,2,0]), :]
+        batch_indices = np.arange(batchsize)
+        g[batch_indices] = x[batch_indices, gs[batch_indices, 0, 0].astype(int), gs[batch_indices, 1, 0].astype(int), gs[batch_indices, 2, 0].astype(int), :]
 
         x = x.reshape(-1,self.width)
         g = g.reshape(-1,self.width)
@@ -322,8 +322,8 @@ if __name__ == '__main__':
     scheduler_step = 100
     tol_early_stop = 800
 
-    modes = 8
-    width = 18
+    modes = 5
+    width = 24
     nlayers = 1
 
     ################################################################
@@ -383,7 +383,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'igibsonenv120_m8_w18_l1_b10_lr3e-3_10g_18sep'
+    op_type = 'igibsonenv120_m5_w24_l1_b10_lr3e-3_10g_18sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
