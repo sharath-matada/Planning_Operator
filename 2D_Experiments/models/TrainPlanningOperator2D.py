@@ -340,6 +340,8 @@ def smooth_chi(mask, dist, smooth_coef):
 
 if __name__ == '__main__':
     # define hyperparameters
+    print("Started Script")
+    os.chdir("/mountvol/2D-512-Dataset")
     lrs = [5e-3]
     gammas = [0.5]
     wds = [3e-6]
@@ -352,19 +354,19 @@ if __name__ == '__main__':
     ################################################################
     #                       configs
     ################################################################
-    Ntotal = 30*20
-    ntrain = 25*20
-    ntest = Ntotal-ntrain
+    Ntotal = 550
+    ntrain = 500
 
-    batch_size = 5
+    ntest = Ntotal-ntrain
+    batch_size = 20
 
     epochs = 501
     scheduler_step = 100
     tol_early_stop = 500
 
     modes = 8
-    width = 32
-    nlayers = 5
+    width = 24
+    nlayers = 1
 
     ################################################################
     # load data and data normalization
@@ -372,19 +374,23 @@ if __name__ == '__main__':
     t1 = default_timer()
 
     sub = 1
-    Sx = int(((256 - 1) / sub) + 1)
+    Sx = int(((512 - 1) / sub) + 1)
     Sy = Sx
 
-    mask = np.load('./street_maps_256x256/mask.npy')
+    print("/n Loading Data......")
+
+    mask = np.load('mask.npy')
     mask = torch.tensor(mask, dtype=torch.float)
-    dist_in = np.load('./street_maps_256x256/dist_in.npy')
+    dist_in = np.load('dist_in.npy')
     dist_in = torch.tensor(dist_in[:Ntotal, :, :], dtype=torch.float)
     input = smooth_chi(mask, dist_in, smooth_coef)
-    output = np.load('./street_maps_256x256/output.npy')
+    output = np.load('output.npy')
     output = torch.tensor(output, dtype=torch.float)
 
-    goals = np.load('./street_maps_256x256/goals.npy')
+    goals = np.load('goals.npy')
     goals = torch.tensor(goals, dtype=torch.float)
+
+    print("Data Loaded!")
 
 
 
@@ -420,7 +426,7 @@ if __name__ == '__main__':
                                               batch_size=batch_size,
                                               shuffle=False)
 
-    op_type = 'street_maps_256x256_symmetric_norm'
+    op_type = 'street_maps_512x512_8m_24w_1l_b20'
     res_dir = './planningoperator2D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -462,7 +468,7 @@ if __name__ == '__main__':
                     print(f'>> Total number of model parameters: {count_params(model)}')
 
                     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=wd)
-                    model_filename = '%s/model_depth4.ckpt' % base_dir
+                    model_filename = '%s/model512.ckpt' % base_dir
 
                     ttrain, ttest = [], []
                     best_train_loss = best_test_loss = 1e8
