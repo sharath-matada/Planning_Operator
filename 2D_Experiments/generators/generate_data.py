@@ -7,7 +7,7 @@ import sys
 
 os.chdir('..')
 
-training_data = np.load("/mountvol/street_maps_1024.npy")
+training_data = np.load("/dataset/street_maps_1024.npy")
 np.random.shuffle(training_data)
 
 train_trial = 25
@@ -19,13 +19,13 @@ travel_time_values_array_train, signed_distance_array_train, velocity_matrices_a
 travel_time_values_array_test,  signed_distance_array_test,  velocity_matrices_array_test,  goals_test =  create_dataset(training_data=training_data[train_trial:,:,:], num_trials=test_trial,  goal_trials=10, env_size=env_size,erosion_trials = 1)
 
 
-np.save("/mountvol/2D-1024-Dataset/goals.npy",np.concatenate((goals_train,goals_test), axis=0))
+np.save("goals.npy",np.concatenate((goals_train,goals_test), axis=0))
 
 # Save velocity_matrices_array as "mask.npy"
-np.save("/mountvol/2D-1024-Dataset/mask.npy", np.concatenate((velocity_matrices_array_train,velocity_matrices_array_test), axis=0))
+np.save("mask.npy", np.concatenate((velocity_matrices_array_train,velocity_matrices_array_test), axis=0))
 
 # Save travel_time_values_array as "output.npy"
-np.save("/mountvol/2D-1024-Dataset/output.npy", np.concatenate((travel_time_values_array_train,travel_time_values_array_test), axis=0))
+np.save("output.npy", np.concatenate((travel_time_values_array_train,travel_time_values_array_test), axis=0))
 
 # Save signed_distance_array as "dist_in.npy"
-np.save("/mountvol/2D-1024-Dataset/dist_in.npy", np.concatenate((signed_distance_array_train,signed_distance_array_test),axis=0))
+np.save("dist_in.npy", np.concatenate((signed_distance_array_train,signed_distance_array_test),axis=0))

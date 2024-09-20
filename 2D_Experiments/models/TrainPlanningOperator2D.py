@@ -277,9 +277,6 @@ class PlanningOperator2D(nn.Module):
         batchsize = chi.shape[0]
         size_x = size_y = chi.shape[1]
 
-        # print("Batch Size", batchsize)
-        # print("Goal Size", gs.shape[0])
-
         assert(gs.shape[0]==batchsize)
 
         grid = self.get_grid(batchsize, size_x, size_y, chi.device)
@@ -304,13 +301,16 @@ class PlanningOperator2D(nn.Module):
 
         g = x.clone()
 
-        for i in range(batchsize):
-                g[i, :, :, :] = x[i, int(gs[i,0,0]), int(gs[i,1,0]), :]
+        batch_indices = torch.arange(batchsize, device=gs.device)  
+        x_indices = gs[:, 0, 0].long()
+        y_indices = gs[:, 1, 0].long()  
+        g = x[batch_indices, x_indices, y_indices, :]  
+        g = g.unsqueeze(1).unsqueeze(1).repeat(1, size_x, size_y, 1)
 
         g = g.reshape(-1,self.width)
         x = x.reshape(-1,self.width)
 
-        # Lifting layer:
+        # Projection layer:
         output = self.fc1(x,g)
         output = output.reshape(batchsize,size_x,size_y,1)
 
