@@ -341,7 +341,7 @@ def smooth_chi(mask, dist, smooth_coef):
 if __name__ == '__main__':
     # define hyperparameters
     print("Started Script")
-    os.chdir("/mountvol/2D-512-Dataset")
+    os.chdir("/mountvol/2D-512-Dataset-0")
     lrs = [5e-3]
     gammas = [0.5]
     wds = [3e-6]
@@ -360,9 +360,9 @@ if __name__ == '__main__':
     ntest = Ntotal-ntrain
     batch_size = 20
 
-    epochs = 501
+    epochs = 401
     scheduler_step = 100
-    tol_early_stop = 500
+    tol_early_stop = 400
 
     modes = 8
     width = 24
@@ -377,7 +377,7 @@ if __name__ == '__main__':
     Sx = int(((512 - 1) / sub) + 1)
     Sy = Sx
 
-    print("/n Loading Data......")
+    print("Loading Data......")
 
     mask = np.load('mask.npy')
     mask = torch.tensor(mask, dtype=torch.float)
@@ -426,7 +426,7 @@ if __name__ == '__main__':
                                               batch_size=batch_size,
                                               shuffle=False)
 
-    op_type = 'street_maps_512x512_8m_24w_1l_b20'
+    op_type = 'street_maps_512x512_8m_12w_1l_b20'
     res_dir = './planningoperator2D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -468,7 +468,7 @@ if __name__ == '__main__':
                     print(f'>> Total number of model parameters: {count_params(model)}')
 
                     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=wd)
-                    model_filename = '%s/model512.ckpt' % base_dir
+                    model_filename = '%s/model256.ckpt' % base_dir
 
                     ttrain, ttest = [], []
                     best_train_loss = best_test_loss = 1e8
