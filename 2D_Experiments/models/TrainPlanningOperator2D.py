@@ -341,7 +341,7 @@ def smooth_chi(mask, dist, smooth_coef):
 if __name__ == '__main__':
     # define hyperparameters
     print("Started Script")
-    os.chdir("/mountvol/2D-512-Dataset-0")
+    os.chdir("/mountvol/2D-1024-Dataset-0")
     lrs = [5e-3]
     gammas = [0.5]
     wds = [3e-6]
@@ -358,14 +358,14 @@ if __name__ == '__main__':
     ntrain = 500
 
     ntest = Ntotal-ntrain
-    batch_size = 20
+    batch_size = 5
 
     epochs = 401
     scheduler_step = 100
     tol_early_stop = 400
 
     modes = 8
-    width = 24
+    width = 28
     nlayers = 1
 
     ################################################################
@@ -374,7 +374,7 @@ if __name__ == '__main__':
     t1 = default_timer()
 
     sub = 1
-    Sx = int(((512 - 1) / sub) + 1)
+    Sx = int(((1024 - 1) / sub) + 1)
     Sy = Sx
 
     print("Loading Data......")
@@ -426,7 +426,7 @@ if __name__ == '__main__':
                                               batch_size=batch_size,
                                               shuffle=False)
 
-    op_type = 'street_maps_512x512_8m_12w_1l_b20'
+    op_type = 'street_maps_1024x1024_8m_28w_1l_b5'
     res_dir = './planningoperator2D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -468,7 +468,7 @@ if __name__ == '__main__':
                     print(f'>> Total number of model parameters: {count_params(model)}')
 
                     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=wd)
-                    model_filename = '%s/model256.ckpt' % base_dir
+                    model_filename = '%s/model1024.ckpt' % base_dir
 
                     ttrain, ttest = [], []
                     best_train_loss = best_test_loss = 1e8
