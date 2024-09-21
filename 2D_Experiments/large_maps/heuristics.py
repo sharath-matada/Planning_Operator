@@ -67,6 +67,17 @@ def euclideannorm(map,goal):
     
     return valuefunction, dt
 
+def manhattandistance(map, goal):
+    
+    t0 = tic()
+    env_size_x, env_size_y = map.shape
+    x, y = np.meshgrid(np.arange(env_size_x), np.arange(env_size_y), indexing='ij')
+    positions = np.stack([x, y], axis=-1)
+    valuefunction = np.abs(positions[..., 0] - goal[0]) + np.abs(positions[..., 1] - goal[1])
+    dt = toc(t0)
+    
+    return valuefunction, dt    
+
 def FMM(map,goal):
     '''Map is a 2D binary occupancy map with 1 representing obstacle and 0 representing free space
     Goal is an index in the map'''
