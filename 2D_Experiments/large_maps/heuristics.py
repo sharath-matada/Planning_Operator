@@ -309,7 +309,7 @@ def testheuristiconmaps(starts, goals, maps, heuristic, plotresults = False, pri
             f, ax = plt.subplots()
             drawMap(ax, map)
             plotClosedNodes(ax,sss)
-            plotInconsistentNodes(ax,sss,env)
+            # plotInconsistentNodes(ax,sss,env)
             drawPath2D(ax, path_array)
     
 
