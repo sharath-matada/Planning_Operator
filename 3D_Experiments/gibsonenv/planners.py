@@ -51,34 +51,18 @@ def generaterandompos(maps):
     size_y = maps.shape[2]
     size_z = maps.shape[3]
 
-    pos = np.zeros((numofmaps, 3))
+    pos = np.zeros((numofmaps,3))
 
-    for i, map in enumerate(maps):
+    for i,map in enumerate(maps):
 
-        # Condition 1: Free space is marked as 1
         condition1 = map == 1
-        
-        # Condition 2: Ensure points are within the central region (1/4 to 3/4) of the map dimensions
-        condition2_x = (1 * size_x // 5 <= np.arange(size_x)) & (np.arange(size_x) < 3 * size_x // 5)
-        condition2_y = (1 * size_y // 5 <= np.arange(size_y)) & (np.arange(size_y) < 3 * size_y // 5)
-        condition2_z = (1 * size_z // 5 <= np.arange(size_z)) & (np.arange(size_z) < 3 * size_z // 5)
-
-        # Meshgrid for the central region
-        xx, yy, zz = np.meshgrid(condition2_x, condition2_y, condition2_z, indexing='ij')
-
-        # Combined condition: Free space and within the central region
-        combined_condition = condition1 & xx & yy & zz
-
-        # Get the indices of passable points based on the combined condition
+        row_indices, col_indices, z_indices = np.indices(map.shape)
+        condition2 = (row_indices < size_x) & (col_indices < size_y) & ((z_indices < size_z))
+        # condition3 = ( 1*size_x/4 <row_indices < 3*size_x/4) & (1*size_y/4<col_indices < 3*size_y/4) & ((1*size_z/4<z_indices < 3*size_z/4))
+        combined_condition = condition1 & condition2
         passable_indices = np.argwhere(combined_condition)
-
-        if len(passable_indices) == 0:
-            raise ValueError(f"No valid points found for map {i}")
-
-        # Randomly choose one of the passable points
         point = random.choice(passable_indices)
-
-        pos[i, :] = np.array([point[0], point[1], point[2]])
+        pos[i,:] = np.array([point[0],point[1],point[2]])
 
     return pos.astype(int)
 
@@ -138,18 +122,18 @@ def perform_gradient_descent(value_function, start_point, goal_point, plotsucces
 
             if (0 <= x_index < value_function.shape[0] and 
                 0 <= y_index < value_function.shape[1] and 
-                0 <= z_index < value_function.shape[2] and 
-                (x_index, y_index, z_index) not in visited_points):
+                0 <= z_index < value_function.shape[2]): 
+                # (x_index, y_index, z_index) not in visited_points):
                 gradient = value_function[x_index, y_index, z_index]
                 if gradient < best_gradient:
                     best_gradient = gradient
                     best_action = action
 
-        if best_gradient > 100:
+        if best_gradient > 10e5:
             if plotfails:
                 print("Failed Path:")
                 plot_path(value_function, path_points)
-            return False, 0  
+            return False, 0, path_points 
 
         if best_action is not None:
             current_point += learning_rate * best_action
@@ -160,16 +144,16 @@ def perform_gradient_descent(value_function, start_point, goal_point, plotsucces
                 if plotsuccess:
                     print("Successful Path:")
                     plot_path(value_function, path_points)
-                return True, path_length  # Success
+                return True, path_length, path_points  # Success
         else:
             if plotfails:
                 print("Failed Path:")
                 plot_path(value_function, path_points)
-            return False, 0  # No valid action found
+            return False, 0, path_points  # No valid action found
     if plotfails:
         print("Failed Path:")
         plot_path(value_function, path_points)
-    return False, 0  
+    return False, 0, path_points  
 
 def plot_path(value_function, path_points):
     fig = plt.figure()
@@ -197,9 +181,9 @@ def AStarPlanner(start, goal, map):
     path_cost, path, action_idx = AStar.plan(start, env)
     dt = toc(t1)
     if path_cost > 10e10:
-        return False, path_cost, dt
+        return False, path_cost, dt, path
     
-    return True, path_cost, dt
+    return True, path_cost, dt, path
 
 def FMMPlanner(start, goal, map):
     env_size_x, env_size_y, env_size_z = map.shape[0],map.shape[1],map.shape[2]
@@ -215,9 +199,9 @@ def FMMPlanner(start, goal, map):
     solver.unknown[src_idx] = False
     solver.trial.push(*src_idx)
     solver.solve()
-    success, pathlength = perform_gradient_descent(solver.traveltime.values,start,goal)
+    success, pathlength,path = perform_gradient_descent(solver.traveltime.values,start,goal)
     dt = toc(t1)
-    return success, pathlength, dt
+    return success, pathlength, dt, path
     
 
 def PlanningOperatorPlanner(start, goal, map, model):
@@ -251,12 +235,12 @@ def PlanningOperatorPlanner(start, goal, map, model):
     valuefunction = valuefunction/(mask+10e-10)
     dt_val = toc(t0) - dt_sdf
 
-    success, pathlength = perform_gradient_descent(valuefunction,start,goal)
+    success, pathlength, path = perform_gradient_descent(valuefunction,start,goal)
     dt_gd = toc(t0) - dt_sdf - dt_val
 
     dt = toc(t0)
 
-    return success, pathlength, dt
+    return success, pathlength, dt, path
 
 
 def DoEikPlanningOperatorPlanner(start, goal, map, sdf_model, val_model):
@@ -298,7 +282,7 @@ def testplanneronmap(starts, goals, maps, planner, plotresults = False, printval
     numofmaps = maps.shape[0]
 
     for start, goal, map in zip(starts, goals, maps):
-        success,pathcost,planningtime,_,_,_ = planner(start, goal,map,**kwargs)
+        success,pathcost,planningtime,_ = planner(start, goal,map,**kwargs)
         if success:
             succcount += 1
             totpathcost += path_cost
@@ -328,7 +312,7 @@ def testplanneronmaps(starts, goals, maps, planner, plotresults = False, printva
     numofmaps = maps.shape[0]
 
     for start, goal, map in zip(starts, goals, maps):
-        success,path_cost,dt_plan = planner(start, goal,map,**kwargs)
+        success,path_cost,dt_plan,_ = planner(start, goal,map,**kwargs)
         if success:
             succcount += 1
         totpathcost += path_cost
@@ -345,6 +329,23 @@ def testplanneronmaps(starts, goals, maps, planner, plotresults = False, printva
                 '\nAverage Success Rate:', avgsuccessrate)
 
     return avgpathcost, avgplantime, avgsuccessrate
+
+
+def plot_2d_map_and_two_paths(path_po, path_fmm, map_3d, z_index):
+    path_po = np.array(list(path_po))
+    path_fmm = np.array(list(path_fmm))
+    map_3d = np.array(map_3d)
+    map_cross_section = map_3d[:, :, z_index]
+    plt.figure(figsize=(8, 8))
+    plt.imshow(map_cross_section.T, cmap='gray', origin='lower')  # Transpose for correct orientation
+    plt.scatter(path_po[:, 0], path_po[:, 1], c='red', label='Path PO', s=50, marker='o')
+    plt.scatter(path_fmm[:, 0], path_fmm[:, 1], c='blue', label='Path FMM', s=50, marker='x')
+
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title(f'2D Scatter Plot of Paths and Map (Cross-section at z={z_index})')
+    plt.legend()
+    plt.show()    
 
 # def RRTPlanner(start, goal, map):
 #     environment = map
