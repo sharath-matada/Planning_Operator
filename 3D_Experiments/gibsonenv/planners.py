@@ -51,17 +51,34 @@ def generaterandompos(maps):
     size_y = maps.shape[2]
     size_z = maps.shape[3]
 
-    pos = np.zeros((numofmaps,3))
+    pos = np.zeros((numofmaps, 3))
 
-    for i,map in enumerate(maps):
+    for i, map in enumerate(maps):
 
+        # Condition 1: Free space is marked as 1
         condition1 = map == 1
-        row_indices, col_indices, z_indices = np.indices(map.shape)
-        condition2 = (row_indices < size_x) & (col_indices < size_y) & ((z_indices < size_z))
-        combined_condition = condition1 & condition2
+        
+        # Condition 2: Ensure points are within the central region (1/4 to 3/4) of the map dimensions
+        condition2_x = (1 * size_x // 5 <= np.arange(size_x)) & (np.arange(size_x) < 3 * size_x // 5)
+        condition2_y = (1 * size_y // 5 <= np.arange(size_y)) & (np.arange(size_y) < 3 * size_y // 5)
+        condition2_z = (1 * size_z // 5 <= np.arange(size_z)) & (np.arange(size_z) < 3 * size_z // 5)
+
+        # Meshgrid for the central region
+        xx, yy, zz = np.meshgrid(condition2_x, condition2_y, condition2_z, indexing='ij')
+
+        # Combined condition: Free space and within the central region
+        combined_condition = condition1 & xx & yy & zz
+
+        # Get the indices of passable points based on the combined condition
         passable_indices = np.argwhere(combined_condition)
+
+        if len(passable_indices) == 0:
+            raise ValueError(f"No valid points found for map {i}")
+
+        # Randomly choose one of the passable points
         point = random.choice(passable_indices)
-        pos[i,:] = np.array([point[0],point[1],point[2]])
+
+        pos[i, :] = np.array([point[0], point[1], point[2]])
 
     return pos.astype(int)
 
@@ -239,7 +256,7 @@ def PlanningOperatorPlanner(start, goal, map, model):
 
     dt = toc(t0)
 
-    return success, pathlength, dt, dt_sdf, dt_val, dt_gd
+    return success, pathlength, dt
 
 
 def DoEikPlanningOperatorPlanner(start, goal, map, sdf_model, val_model):
@@ -274,58 +291,60 @@ def DoEikPlanningOperatorPlanner(start, goal, map, sdf_model, val_model):
 
     return success, pathlength, dt
 
-def testplanneronmap(starts, goals, maps, planner, plotresults = False, printvalues = True, **kwargs):
-    avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate = 0, 0, 0, 0, 0
-    totpathcost, totplantime, totinfertime, totnodesexp, succcount = 0, 0, 0, 0, 0
+def testplanneronmap(starts, goals, maps, planner, plotresults = False, printvalues = False, **kwargs):
+    avgpathcost, avgplantime, avgsuccessrate = 0, 0, 0, 0, 0
+    totpathcost, totplantime, succcount = 0, 0, 0, 0, 0
 
     numofmaps = maps.shape[0]
 
-    # for start, goal, map in zip(starts, goals, 1-maps):
-    #     do nothing
+    for start, goal, map in zip(starts, goals, maps):
+        success,pathcost,planningtime,_,_,_ = planner(start, goal,map,**kwargs)
+        if success:
+            succcount += 1
+            totpathcost += path_cost
+            totplantime += dt_plan
+        
+        
 
     # Calculate averages
     avgpathcost = totpathcost / numofmaps
     avgplantime = totplantime / numofmaps
-    avginfertime = totinfertime / numofmaps
-    avgnodesexp = totnodesexp / numofmaps
     avgsuccessrate = succcount / numofmaps
 
     if printvalues:
         print(  'Average Path Cost:', avgpathcost, 
-                '\nAverage Planning Time:', avgplantime,
-                '\nAverage Inference Time:', avginfertime, 
-                '\nAverage Number of Node Expansions:', avgnodesexp,
+                '\nAverage Planning Time:', avgplantime, 
                 '\nAverage Success Rate:', avgsuccessrate)
 
-    return avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate
+    return avgpathcost, avgplantime, avgsuccessrate
 
 
 
 
 def testplanneronmaps(starts, goals, maps, planner, plotresults = False, printvalues = True, **kwargs):
-    avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate = 0, 0, 0, 0, 0
-    totpathcost, totplantime, totinfertime, totnodesexp, succcount = 0, 0, 0, 0, 0
+    avgpathcost, avgplantime, avgsuccessrate = 0, 0, 0
+    totpathcost, totplantime, succcount = 0, 0, 0
 
     numofmaps = maps.shape[0]
 
-    # for start, goal, map in zip(starts, goals, 1-maps):
-    #     do nothing
+    for start, goal, map in zip(starts, goals, maps):
+        success,path_cost,dt_plan = planner(start, goal,map,**kwargs)
+        if success:
+            succcount += 1
+        totpathcost += path_cost
+        totplantime += dt_plan
 
     # Calculate averages
     avgpathcost = totpathcost / numofmaps
     avgplantime = totplantime / numofmaps
-    avginfertime = totinfertime / numofmaps
-    avgnodesexp = totnodesexp / numofmaps
     avgsuccessrate = succcount / numofmaps
 
     if printvalues:
         print(  'Average Path Cost:', avgpathcost, 
-                '\nAverage Planning Time:', avgplantime,
-                '\nAverage Inference Time:', avginfertime, 
-                '\nAverage Number of Node Expansions:', avgnodesexp,
+                '\nAverage Planning Time:', avgplantime, 
                 '\nAverage Success Rate:', avgsuccessrate)
 
-    return avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate
+    return avgpathcost, avgplantime, avgsuccessrate
 
 # def RRTPlanner(start, goal, map):
 #     environment = map

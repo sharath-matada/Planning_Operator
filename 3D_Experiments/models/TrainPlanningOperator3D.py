@@ -256,8 +256,15 @@ class PlanningOperator3D(nn.Module):
         x = x.permute(0, 2, 3, 4, 1)
         g = x.clone()
 
-        for i in range(batchsize):
-                g[i, :, :, :,:] = x[i, int(gs[i,0,0]), int(gs[i,1,0]),int(gs[i,2,0]), :]
+        batch_indices = torch.arange(batchsize, device=gs.device)  # Ensure indices are on the same device
+        x_indices = gs[:, 0, 0].long()  # Shape: [batchsize]
+        y_indices = gs[:, 1, 0].long()  # Shape: [batchsize]
+        z_indices = gs[:, 2, 0].long()  # Shape: [batchsize]
+
+        g = x[batch_indices, x_indices, y_indices, z_indices, :] 
+
+        # If you need to reshape g to match the original 5D shape of [batchsize, D1, D2, D3, C], repeat it:
+        g = g.unsqueeze(1).unsqueeze(1).unsqueeze(1).repeat(1, size_x, size_y, size_z, 1)
 
         x = x.reshape(-1,self.width)
         g = g.reshape(-1,self.width)
@@ -300,7 +307,7 @@ def smooth_chi(mask, dist, smooth_coef):
 if __name__ == '__main__':
     # define hyperparameters
     print("Started Script")
-    os.chdir("/mountvol/dataset-80-15g")
+    os.chdir("/mountvol/igib-hexpo-dataset-80-10g")
 
     lrs = [3e-3]
     gammas = [0.6]
@@ -314,17 +321,17 @@ if __name__ == '__main__':
     ################################################################
     #                       configs
     ################################################################
-    Ntotal = 32*15+8*15
-    ntrain = 32*15
-    ntest =  8*15
+    Ntotal = 64*10+16*10
+    ntrain = 64*10
+    ntest =  16*10
 
-    batch_size = 20
+    batch_size = 5
 
     epochs = 801
     scheduler_step = 100
     tol_early_stop = 800
 
-    modes = 6
+    modes = 5
     width = 12
     nlayers = 1
 
@@ -385,7 +392,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'igibsonenv80_m6_w12_l1_b20_lr3e-3_15g_19sep'
+    op_type = 'env80_m5_w12_l1_b5_lr3e-3_10g_22sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
