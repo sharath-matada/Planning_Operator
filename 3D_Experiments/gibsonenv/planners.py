@@ -32,6 +32,8 @@ from astar3D.astar import  AStar
 from astar3D.environment_simple import Environment3D
 from astar3D.utilities import tic, toc
 
+from tqdm import tqdm
+
 # import ompl.base as ob
 # import ompl.geometric as og
 # import ompl.util as ou
@@ -311,16 +313,18 @@ def testplanneronmaps(starts, goals, maps, planner, plotresults = False, printva
 
     numofmaps = maps.shape[0]
 
-    for start, goal, map in zip(starts, goals, maps):
+    for start, goal, map in tqdm(zip(starts, goals, maps)):
         success,path_cost,dt_plan,_ = planner(start, goal,map,**kwargs)
         if success:
             succcount += 1
-        totpathcost += path_cost
-        totplantime += dt_plan
+            totpathcost += path_cost
+            totplantime += dt_plan
+        
+        
 
     # Calculate averages
-    avgpathcost = totpathcost / numofmaps
-    avgplantime = totplantime / numofmaps
+    avgpathcost = totpathcost / succcount
+    avgplantime = totplantime / succcount
     avgsuccessrate = succcount / numofmaps
 
     if printvalues:

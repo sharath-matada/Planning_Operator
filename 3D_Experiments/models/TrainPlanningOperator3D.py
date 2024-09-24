@@ -307,7 +307,7 @@ def smooth_chi(mask, dist, smooth_coef):
 if __name__ == '__main__':
     # define hyperparameters
     print("Started Script")
-    os.chdir("/mountvol/igib-hexpo-dataset-80-10g")
+    os.chdir("/mountvol/igibchunk-dataset-48-10g")
 
     lrs = [3e-3]
     gammas = [0.6]
@@ -321,18 +321,18 @@ if __name__ == '__main__':
     ################################################################
     #                       configs
     ################################################################
-    Ntotal = 64*10+16*10
-    ntrain = 64*10
-    ntest =  16*10
+    Ntotal = 32*10+8*10
+    ntrain = 32*10
+    ntest =  8*10
 
-    batch_size = 5
+    batch_size = 10
 
     epochs = 801
     scheduler_step = 100
     tol_early_stop = 800
 
-    modes = 5
-    width = 12
+    modes = 12
+    width = 32
     nlayers = 1
 
     ################################################################
@@ -341,9 +341,9 @@ if __name__ == '__main__':
     t1 = default_timer()
 
     sub = 1
-    Sx = int(((80 - 1) / sub) + 1)
+    Sx = int(((48 - 1) / sub) + 1)
     Sy = Sx
-    Sz = int(((30 - 1) / sub) + 1)
+    Sz = int(((48 - 1) / sub) + 1)
 
     print("Loading Data.......")
     mask = np.load('mask.npy')[:Ntotal,:,:,:]
@@ -392,7 +392,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'env80_m5_w12_l1_b5_lr3e-3_10g_22sep'
+    op_type = 'env48_m12_w32_l1_b10_lr3e-3_10g_23sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
