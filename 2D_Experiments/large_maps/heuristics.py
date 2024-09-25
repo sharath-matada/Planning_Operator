@@ -9,8 +9,8 @@ import torch.nn.functional as F
 import torchvision.transforms as tvt
 
 # FMM Packages
-# import pykonal
-# import skfmm
+import pykonal
+import skfmm
 
 import matplotlib.pyplot as plt
 
