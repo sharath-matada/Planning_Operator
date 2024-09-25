@@ -10,7 +10,7 @@ import torchvision.transforms as tvt
 
 # FMM Packages
 import pykonal
-import skfmm
+# import skfmm
 
 import matplotlib.pyplot as plt
 
@@ -278,7 +278,7 @@ def testheuristiconsinglemap(start, goal, map, heuristic, plotresults = False, *
 
 
     
-def testheuristiconmaps(starts, goals, maps, heuristic, plotresults = False, printvalues = True, **kwargs):
+def testheuristiconmaps(starts, goals, maps, heuristic, plotresults = False, printvalues = True, saveplotdata= False,**kwargs):
     avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate = 0, 0, 0, 0, 0
     totpathcost, totplantime, totinfertime, totnodesexp, succcount = 0, 0, 0, 0, 0
 
@@ -308,9 +308,21 @@ def testheuristiconmaps(starts, goals, maps, heuristic, plotresults = False, pri
         if plotresults:
             f, ax = plt.subplots()
             drawMap(ax, map)
-            plotClosedNodes(ax,sss)
+            closednodes = plotClosedNodes(ax,sss)
             # plotInconsistentNodes(ax,sss,env)
             drawPath2D(ax, path_array)
+
+            if saveplotdata:
+            # Save the closed nodes and the path
+                closed_coords = [sss['hm'][key].coord for key in sss['closed_list']]
+                closed_array = np.array(closed_coords)
+
+                # Save to files using a unique identifier (idx)
+                np.save(f'closednodes.npy', closed_array)
+                np.save(f'path.npy', path_array)
+                np.save(f'map.npy', map)
+                np.save(f'valuefunction.npy',valuefunction)
+    
     
 
     # Calculate averages

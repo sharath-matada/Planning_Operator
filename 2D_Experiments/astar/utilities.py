@@ -104,6 +104,8 @@ def plotClosedNodes(ax, sss, color='red', marker='x', label='Closed Nodes'):
   # Plot the closed nodes on the provided axes
   ax.scatter(x_coords, y_coords, c=color, marker=marker, label=label)
 
+  return closed_coords
+
 
 def plotInconsistentNodes(ax, sss, env):
     """
