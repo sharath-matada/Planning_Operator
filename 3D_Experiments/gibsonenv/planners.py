@@ -124,8 +124,8 @@ def perform_gradient_descent(value_function, start_point, goal_point, plotsucces
 
             if (0 <= x_index < value_function.shape[0] and 
                 0 <= y_index < value_function.shape[1] and 
-                0 <= z_index < value_function.shape[2]): 
-                # (x_index, y_index, z_index) not in visited_points):
+                0 <= z_index < value_function.shape[2] and
+                (x_index, y_index, z_index) not in visited_points):
                 gradient = value_function[x_index, y_index, z_index]
                 if gradient < best_gradient:
                     best_gradient = gradient
@@ -307,32 +307,32 @@ def testplanneronmap(starts, goals, maps, planner, plotresults = False, printval
 
 
 
-def testplanneronmaps(starts, goals, maps, planner, plotresults = False, printvalues = True, **kwargs):
+def testplanneronmaps(starts, goals, maps, planner, plotresults=False, printvalues=True, **kwargs):
     avgpathcost, avgplantime, avgsuccessrate = 0, 0, 0
     totpathcost, totplantime, succcount = 0, 0, 0
+    successful_map_indices = []
 
     numofmaps = maps.shape[0]
 
-    for start, goal, map in tqdm(zip(starts, goals, maps)):
-        success,path_cost,dt_plan,_ = planner(start, goal,map,**kwargs)
+    for idx, (start, goal, map) in enumerate(tqdm(zip(starts, goals, maps))):
+        success, path_cost, dt_plan, _ = planner(start, goal, map, **kwargs)
         if success:
             succcount += 1
             totpathcost += path_cost
             totplantime += dt_plan
+            successful_map_indices.append(idx)
         
-        
-
     # Calculate averages
-    avgpathcost = totpathcost / succcount
-    avgplantime = totplantime / succcount
+    avgpathcost = totpathcost / succcount if succcount > 0 else 0
+    avgplantime = totplantime / succcount if succcount > 0 else 0
     avgsuccessrate = succcount / numofmaps
 
     if printvalues:
-        print(  'Average Path Cost:', avgpathcost, 
-                '\nAverage Planning Time:', avgplantime, 
-                '\nAverage Success Rate:', avgsuccessrate)
+        print('Average Path Cost:', avgpathcost, 
+              '\nAverage Planning Time:', avgplantime, 
+              '\nAverage Success Rate:', avgsuccessrate)
 
-    return avgpathcost, avgplantime, avgsuccessrate
+    return avgpathcost, avgplantime, avgsuccessrate, successful_map_indices
 
 
 def plot_2d_map_and_two_paths(path_po, path_fmm, map_3d, z_index):
