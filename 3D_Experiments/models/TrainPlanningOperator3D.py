@@ -307,7 +307,7 @@ def smooth_chi(mask, dist, smooth_coef):
 if __name__ == '__main__':
     # define hyperparameters
     print("Started Script")
-    os.chdir("/mountvol/igibchunk-dataset-84-10g")
+    os.chdir("/mountvol/igib-dataset-160-5G")
 
     lrs = [3e-3]
     gammas = [0.6]
@@ -321,15 +321,15 @@ if __name__ == '__main__':
     ################################################################
     #                       configs
     ################################################################
-    Ntotal = 500
-    ntrain = 450
-    ntest =  50
+    Ntotal = 400
+    ntrain = 320
+    ntest =  80
 
-    batch_size = 10
+    batch_size = 5
 
-    epochs = 801
+    epochs = 401
     scheduler_step = 100
-    tol_early_stop = 800
+    tol_early_stop = 400
 
     modes = 12
     width = 32
@@ -341,9 +341,9 @@ if __name__ == '__main__':
     t1 = default_timer()
 
     sub = 1
-    Sx = int(((84 - 1) / sub) + 1)
+    Sx = int(((160 - 1) / sub) + 1)
     Sy = Sx
-    Sz = int(((84 - 1) / sub) + 1)
+    Sz = int(((62 - 1) / sub) + 1)
 
     print("Loading Data.......")
     mask = np.load('mask.npy')[:Ntotal,:,:,:]
@@ -392,7 +392,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'env84_m12_w32_l1_b10_lr3e-3_10g_23sep'
+    op_type = 'env160_m12_w32_l1_b5_lr3e-3_5g_26sep'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -428,7 +428,7 @@ if __name__ == '__main__':
                     ################################################################
                     #                      train and eval
                     ################################################################
-                    myloss = LpLoss(size_average=False)
+                    myloss = LpLoss(size_average=False, d=3)
                     print("-" * 100)
                     model = PlanningOperator3D(modes, modes, modes, width, nlayers).to(device)
 
