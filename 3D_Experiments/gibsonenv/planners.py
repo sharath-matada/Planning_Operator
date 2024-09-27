@@ -204,6 +204,59 @@ def FMMPlanner(start, goal, map):
     success, pathlength,path = perform_gradient_descent(solver.traveltime.values,start,goal)
     dt = toc(t1)
     return success, pathlength, dt, path
+
+
+def getFMMVal(goal,map):
+    env_size_x, env_size_y, env_size_z = map.shape[0],map.shape[1],map.shape[2]
+    t1 = tic()
+    solver = pykonal.EikonalSolver(coord_sys = "Cartesian")
+    velocity_matrix  = map
+    solver.velocity.min_coords = 0, 0, 0
+    solver.velocity.node_intervals = 1, 1, 1
+    solver.velocity.npts = env_size_x, env_size_y, env_size_z
+    solver.velocity.values = velocity_matrix.reshape(env_size_x, env_size_y, env_size_z)
+    src_idx = goal[0].astype(int), goal[1].astype(int), goal[2].astype(int)
+    solver.traveltime.values[src_idx] = 0
+    solver.unknown[src_idx] = False
+    solver.trial.push(*src_idx)
+    solver.solve()
+    dt = toc(t1)
+    return solver.traveltime.values, dt
+
+
+def getPNOVal(goal, map, model):
+    mask = map
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    env_size_x, env_size_y, env_size_z = map.shape[0],map.shape[1],map.shape[2]
+
+    # Calculate SDF of eroded map
+    map = map.reshape(1,env_size_x,env_size_y,env_size_z,1)
+    map = torch.tensor(map,dtype=torch.float)
+
+    t0 = tic()
+    sdf = calculate_signed_distance(mask)
+    dt_sdf = toc(t0)
+
+    sdf = sdf.reshape(1,env_size_x,env_size_y,env_size_z,1)
+    sdf = torch.tensor(sdf,dtype=torch.float)
+
+    # Calculate Chi for smoothening
+    smooth_coef=5. #Depends on what is it trained on
+    chi = smooth_chi(map, sdf, smooth_coef).to(device)
+
+    # Load Goal Position
+    goal_coord = np.array([goal[0],goal[1],goal[2]])
+    gg = goal_coord.reshape(1,3,1)
+    gg = torch.tensor(gg, dtype=torch.float).to(device)
+
+    #Infer value function 
+    valuefunction = model(chi,gg)
+    valuefunction = valuefunction.detach().cpu().numpy().reshape(env_size_x,env_size_y, env_size_z)
+    valuefunction = valuefunction*(mask)
+    dt_val = toc(t0) - dt_sdf
+    dt = toc(t0)
+
+    return valuefunction, dt
     
 
 def PlanningOperatorPlanner(start, goal, map, model):
