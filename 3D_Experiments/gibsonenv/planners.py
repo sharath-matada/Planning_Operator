@@ -221,7 +221,9 @@ def getFMMVal(goal,map):
     solver.trial.push(*src_idx)
     solver.solve()
     dt = toc(t1)
-    return solver.traveltime.values, dt
+    valuefunction = solver.traveltime.values
+    valuefunction = np.where(map == 0, 0, valuefunction)
+    return valuefunction, dt
 
 
 def getPNOVal(goal, map, model):
