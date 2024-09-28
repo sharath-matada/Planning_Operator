@@ -389,10 +389,10 @@ def testheuristiconmaps(starts, goals, maps, heuristic, plotresults=False, print
                 filename_prefix = f'{heuristic_name}{erosion_str}'
 
                 # Save to files using the generated unique prefix
-                np.save(f'../dataset/{filename_prefix}_closednodes.npy', closed_array)
-                np.save(f'../dataset/{filename_prefix}_path.npy', path_array)
-                np.save(f'../dataset/{filename_prefix}_map.npy', map)
-                np.save(f'../dataset/{filename_prefix}_valuefunction.npy', valuefunction)
+                np.save(f'{filename_prefix}_closednodes.npy', closed_array)
+                np.save(f'{filename_prefix}_path.npy', path_array)
+                np.save(f'{filename_prefix}_map.npy', map)
+                np.save(f'{filename_prefix}_valuefunction.npy', valuefunction)
 
     # Calculate averages
     avgpathcost = totpathcost / numofmaps
