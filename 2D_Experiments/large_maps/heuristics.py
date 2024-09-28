@@ -244,6 +244,8 @@ def doEikplanningoperator(map,goal,model,erosion=4):
     valuefunction = np.maximum(euclideanvalue, valuefunction)
     dt = toc(t0)
 
+    eroded_map = eroded_map.detach().cpu().numpy().reshape(env_size_x,env_size_y)
+
     return valuefunction,dt
 
 
@@ -278,16 +280,82 @@ def testheuristiconsinglemap(start, goal, map, heuristic, plotresults = False, *
 
 
     
-def testheuristiconmaps(starts, goals, maps, heuristic, plotresults = False, printvalues = True, saveplotdata= False,**kwargs):
+# def testheuristiconmaps(starts, goals, maps, heuristic, plotresults = False, printvalues = True, saveplotdata= False,**kwargs):
+#     avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate = 0, 0, 0, 0, 0
+#     totpathcost, totplantime, totinfertime, totnodesexp, succcount = 0, 0, 0, 0, 0
+
+#     numofmaps = maps.shape[0]
+
+#     for start, goal, map in zip(starts, goals, 1-maps):
+
+#         # Call the heuristic function with additional arguments
+#         valuefunction, dt_infer = heuristic(map, goal,**kwargs)
+        
+#         env = Environment2D(goal, map, valuefunction)
+        
+#         t0 = tic()
+#         path_cost, path, action_idx, nodes_count, sss = AStar.plan(start, env)
+#         dt_plan = toc(t0)
+
+#         if path_cost < 10e10:
+#             succcount += 1
+
+#         totpathcost += path_cost
+#         totplantime += dt_plan
+#         totinfertime += dt_infer
+#         totnodesexp += nodes_count
+
+#         path_array = np.asarray(path)
+        
+#         if plotresults:
+#             f, ax = plt.subplots()
+#             drawMap(ax, map)
+#             closednodes = plotClosedNodes(ax,sss)
+#             # plotInconsistentNodes(ax,sss,env)
+#             drawPath2D(ax, path_array)
+
+#             if saveplotdata:
+#             # Save the closed nodes and the path
+#                 closed_coords = [sss['hm'][key].coord for key in sss['closed_list']]
+#                 closed_array = np.array(closed_coords)
+
+#                 # Save to files using a unique identifier (idx)
+#                 np.save(f'closednodes.npy', closed_array)
+#                 np.save(f'path.npy', path_array)
+#                 np.save(f'map.npy', map)
+#                 np.save(f'valuefunction.npy',valuefunction)
+    
+    
+
+#     # Calculate averages
+#     avgpathcost = totpathcost / numofmaps
+#     avgplantime = totplantime / numofmaps
+#     avginfertime = totinfertime / numofmaps
+#     avgnodesexp = totnodesexp / numofmaps
+#     avgsuccessrate = succcount / numofmaps
+
+#     if printvalues:
+#         print(  'Average Path Cost:', avgpathcost, 
+#                 '\nAverage Planning Time:', avgplantime,
+#                 '\nAverage Inference Time:', avginfertime, 
+#                 '\nAverage Number of Node Expansions:', avgnodesexp,
+#                 '\nAverage Success Rate:', avgsuccessrate)
+
+#     return avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate
+
+
+def testheuristiconmaps(starts, goals, maps, heuristic, plotresults=False, printvalues=True, saveplotdata=False, **kwargs):
     avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate = 0, 0, 0, 0, 0
     totpathcost, totplantime, totinfertime, totnodesexp, succcount = 0, 0, 0, 0, 0
 
     numofmaps = maps.shape[0]
+    erosion = kwargs.get('erosion', None)  # Get the erosion value if passed in kwargs
+    heuristic_name = heuristic.__name__  # Get the name of the heuristic function
 
-    for start, goal, map in zip(starts, goals, 1-maps):
+    for start, goal, map in zip(starts, goals, 1 - maps):
 
         # Call the heuristic function with additional arguments
-        valuefunction, dt_infer = heuristic(map, goal,**kwargs)
+        valuefunction, dt_infer = heuristic(map, goal, **kwargs)
         
         env = Environment2D(goal, map, valuefunction)
         
@@ -308,22 +376,23 @@ def testheuristiconmaps(starts, goals, maps, heuristic, plotresults = False, pri
         if plotresults:
             f, ax = plt.subplots()
             drawMap(ax, map)
-            closednodes = plotClosedNodes(ax,sss)
-            # plotInconsistentNodes(ax,sss,env)
+            closednodes = plotClosedNodes(ax, sss)
             drawPath2D(ax, path_array)
 
             if saveplotdata:
-            # Save the closed nodes and the path
+                # Save the closed nodes and the path
                 closed_coords = [sss['hm'][key].coord for key in sss['closed_list']]
                 closed_array = np.array(closed_coords)
 
-                # Save to files using a unique identifier (idx)
-                np.save(f'closednodes.npy', closed_array)
-                np.save(f'path.npy', path_array)
-                np.save(f'map.npy', map)
-                np.save(f'valuefunction.npy',valuefunction)
-    
-    
+                # Create a unique filename using the heuristic name and erosion value (if provided)
+                erosion_str = f'_erosion_{erosion}' if erosion is not None else ''
+                filename_prefix = f'{heuristic_name}{erosion_str}'
+
+                # Save to files using the generated unique prefix
+                np.save(f'../dataset/{filename_prefix}_closednodes.npy', closed_array)
+                np.save(f'../dataset/{filename_prefix}_path.npy', path_array)
+                np.save(f'../dataset/{filename_prefix}_map.npy', map)
+                np.save(f'../dataset/{filename_prefix}_valuefunction.npy', valuefunction)
 
     # Calculate averages
     avgpathcost = totpathcost / numofmaps
@@ -333,11 +402,11 @@ def testheuristiconmaps(starts, goals, maps, heuristic, plotresults = False, pri
     avgsuccessrate = succcount / numofmaps
 
     if printvalues:
-        print(  'Average Path Cost:', avgpathcost, 
-                '\nAverage Planning Time:', avgplantime,
-                '\nAverage Inference Time:', avginfertime, 
-                '\nAverage Number of Node Expansions:', avgnodesexp,
-                '\nAverage Success Rate:', avgsuccessrate)
+        print('Average Path Cost:', avgpathcost, 
+              '\nAverage Planning Time:', avgplantime,
+              '\nAverage Inference Time:', avginfertime, 
+              '\nAverage Number of Node Expansions:', avgnodesexp,
+              '\nAverage Success Rate:', avgsuccessrate)
 
     return avgpathcost, avgplantime, avginfertime, avgnodesexp, avgsuccessrate
 
