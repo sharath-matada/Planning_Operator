@@ -392,7 +392,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'env160_m12_w32_l1_b5_lr3e-3_5g_26sep'
+    op_type = 'env160_m12_w32_l1_b5_lr3e-3_5g_30nov_2400'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -464,7 +464,37 @@ if __name__ == '__main__':
                             yy= yy*mm
                             # print(out[0,40,40,10:13,0])
 
-                            loss = myloss(out, yy)
+                            grad_out = torch.linalg.vector_norm(
+                                torch.stack(
+                                    list(
+                                        torch.gradient(
+                                            out.reshape(out.shape[0], out.shape[1], out.shape[2], out.shape[3]),
+                                            dim=[1, 2, 3]
+                                        )
+                                    ),
+                                    dim=0
+                                ),
+                                dim=0
+                            )
+                            grad_y = torch.linalg.vector_norm(
+                                torch.stack(
+                                    list(
+                                        torch.gradient(
+                                            yy.reshape(out.shape[0], out.shape[1], out.shape[2], out.shape[3]),
+                                            dim=[1, 2, 3]
+                                        )
+                                    ),
+                                    dim=0
+                                ),
+                                dim=0
+                            )
+                            loss1 = myloss(out, yy)
+                            loss2 = myloss(
+                                grad_out.view(batch_size, yy.shape[1], yy.shape[2], yy.shape[3]),
+                                grad_y.view(batch_size, yy.shape[1], yy.shape[2], yy.shape[3])
+                            )
+
+                            loss = loss1 + loss2
                             train_l2 += loss.item()
                             # print(loss)
 
@@ -486,7 +516,39 @@ if __name__ == '__main__':
                                     out = out*mm
                                     yy *= mm
 
-                                    test_l2 += myloss(out, yy).item()
+                                    grad_out = torch.linalg.vector_norm(
+                                        torch.stack(
+                                            list(
+                                                torch.gradient(
+                                                    out.reshape(out.shape[0], out.shape[1], out.shape[2], out.shape[3]),
+                                                    dim=[1, 2, 3]
+                                                )
+                                            ),
+                                            dim=0
+                                        ),
+                                        dim=0
+                                    )
+                                    grad_y = torch.linalg.vector_norm(
+                                        torch.stack(
+                                            list(
+                                                torch.gradient(
+                                                    yy.reshape(out.shape[0], out.shape[1], out.shape[2], out.shape[3]),
+                                                    dim=[1, 2, 3]
+                                                )
+                                            ),
+                                            dim=0
+                                        ),
+                                        dim=0
+                                    )
+
+                                    loss1 = myloss(out, yy)
+                                    loss2 = myloss(
+                                        grad_out.view(batch_size, yy.shape[1], yy.shape[2], yy.shape[3]),
+                                        grad_y.view(batch_size, yy.shape[1], yy.shape[2], yy.shape[3])
+                                    )
+
+                                    loss = loss1 + loss2
+                                    test_l2 += loss.item()
 
                             test_l2 /= ntest
                             ttest.append([ep, test_l2])
