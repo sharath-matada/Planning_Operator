@@ -56,7 +56,6 @@ def create_dataset(maps, num_trials,goal_trials,env_size, erosion_trials = 1, a_
                     print("count not matching")
                     break
 
-
                 environment = np.array(original_maze)
                 while np.all(travel_time_values_array[trial * goal_trials + goal_trial, :, :, :] == 0):
                     velocity_matrix = environment

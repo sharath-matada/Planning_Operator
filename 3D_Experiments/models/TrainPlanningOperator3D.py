@@ -331,8 +331,8 @@ if __name__ == '__main__':
     scheduler_step = 100
     tol_early_stop = 400
 
-    modes = 12
-    width = 32
+    modes = 3
+    width = 8
     nlayers = 1
 
     ################################################################
