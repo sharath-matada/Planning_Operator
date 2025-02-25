@@ -309,7 +309,7 @@ if __name__ == '__main__':
     print("Started Script")
     os.chdir("/mountvol/igib-dataset-160-5G")
 
-    lrs = [3e-3]
+    lrs = [1e-3]
     gammas = [0.6]
     wds = [3e-6]
     smooth_coefs = [5.]
@@ -325,15 +325,15 @@ if __name__ == '__main__':
     ntrain = 320
     ntest =  80
 
-    batch_size = 5
+    batch_size = 3
 
     epochs = 401
     scheduler_step = 100
     tol_early_stop = 400
 
-    modes = 3
-    width = 8
-    nlayers = 1
+    modes = 8
+    width = 32
+    nlayers = 4
 
     ################################################################
     # load data and data normalization
@@ -392,7 +392,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'env160_m12_w32_l1_b5_lr3e-3_5g_30nov_2400'
+    op_type = 'env160_m8_w32_l4_b3_lr3e-3_5g_24feb_1700_pinn'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
@@ -490,10 +490,9 @@ if __name__ == '__main__':
                             )
                             loss1 = myloss(out, yy)
                             loss2 = myloss(
-                                grad_out.view(batch_size, yy.shape[1], yy.shape[2], yy.shape[3]),
-                                grad_y.view(batch_size, yy.shape[1], yy.shape[2], yy.shape[3])
+                                grad_out.view(*yy.shape),  # Ensure the shape matches dynamically
+                                grad_y.view(*yy.shape)
                             )
-
                             loss = loss1 + loss2
                             train_l2 += loss.item()
                             # print(loss)
@@ -503,7 +502,6 @@ if __name__ == '__main__':
 
                         train_l2 /= ntrain
                         ttrain.append([ep, train_l2])
-
                         if train_l2 < best_train_loss:
                             model.eval()
                             test_l2 = 0
@@ -543,8 +541,8 @@ if __name__ == '__main__':
 
                                     loss1 = myloss(out, yy)
                                     loss2 = myloss(
-                                        grad_out.view(batch_size, yy.shape[1], yy.shape[2], yy.shape[3]),
-                                        grad_y.view(batch_size, yy.shape[1], yy.shape[2], yy.shape[3])
+                                        grad_out.view(*yy.shape),  # Ensure the shape matches dynamically
+                                        grad_y.view(*yy.shape)
                                     )
 
                                     loss = loss1 + loss2
