@@ -309,10 +309,10 @@ if __name__ == '__main__':
     print("Started Script")
     os.chdir("/mountvol/igib-dataset-160-5G")
 
-    lrs = [1e-3]
+    lrs = [3e-3]
     gammas = [0.6]
     wds = [3e-6]
-    smooth_coefs = [5.]
+    smooth_coefs = [1.]
     smooth_coef = smooth_coefs[0]
     # experiments to be replicated with different seeds
     seeds = [5, 2000, 14000, 16000, 100000]
@@ -333,7 +333,7 @@ if __name__ == '__main__':
 
     modes = 8
     width = 32
-    nlayers = 4
+    nlayers = 6
 
     ################################################################
     # load data and data normalization
@@ -392,7 +392,7 @@ if __name__ == '__main__':
                                               shuffle=False)
     
     print("Training Started")
-    op_type = 'env160_m8_w32_l4_b3_lr3e-3_5g_24feb_1700_pinn'
+    op_type = 'env160_m8_w32_l6_b3_lr3e-3_5g_24feb_1900_pinn'
     res_dir = './planningoperator3D_%s' % op_type
     if not os.path.exists(res_dir):
         os.makedirs(res_dir)
