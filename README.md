@@ -1,4 +1,4 @@
-# Planning Operator: Generalizable Planner using Neural Operators
+# Planning Operator: Generalizable motion planning via operator learning
 Abstract: Classical tools for motion planning in complex environments have long suffered from performance
 degradation as the dimension of the environment scales. As such, many modern approaches to motion
 planning augment classical techniques with neural network (NN) based models to enhance computa-
