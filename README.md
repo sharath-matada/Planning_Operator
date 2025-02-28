@@ -54,7 +54,7 @@ Installation
   - results
   - dataset
 
-where the hierarchy is given via bullets. 
+where the hierarchy is given via bullets and the results folder has all of the models downloaded from Hugging Face.
 
 - Run the jupyter-notebook. Sections 1 and 2 allow you to train your own models but they can be skipped. Sections 3 and 4 quantitatively test the models and reproduce the results in the paper. 
 
