@@ -152,7 +152,7 @@ def generaterandompos(maps):
     return pos.astype(int)
 
 def getPNOValueFunction(map, goal, model):
-    mask = (1 - map)
+    mask = (map)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     env_size_x, env_size_y, env_size_z, env_size_t = map.shape
     sdf = calculate_signed_distance(mask)
@@ -169,9 +169,24 @@ def getPNOValueFunction(map, goal, model):
 
     valuefunction = model(chi, goal_coord)
     valuefunction = valuefunction.detach().cpu().numpy().reshape(env_size_x, env_size_y, env_size_z, env_size_t)
-    valuefunction = valuefunction / (map + 1e-20)
+    mask = mask.detach().cpu().numpy().reshape(env_size_x,env_size_y,env_size_z,env_size_t)
+
+    valuefunction = valuefunction / (mask + 1e-20)
 
     return valuefunction
+
+def getFMMValueFunction(map,goal):
+    '''Map is a 2D binary occupancy map with 1 representing obstacle and 0 representing free space
+    Goal is an index in the map'''
+
+    env_size_x, env_size_y, env_size_z, env_size_a = map.shape
+    phi = np.ones((env_size_x, env_size_y, env_size_z, env_size_a))
+    phi[goal[0].astype(int),goal[1].astype(int),goal[2].astype(int), goal[3].astype(int)] = 0
+    velocity_matrix = (map)
+    valuefunction = skfmm.travel_time(phi, speed = velocity_matrix).filled()
+    return valuefunction
+
+
 
 
 
